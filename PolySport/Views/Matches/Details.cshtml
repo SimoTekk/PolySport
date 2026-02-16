@@ -1,0 +1,74 @@
+﻿@model PolySport.Models.ViewModels.MatchDetailsViewModel
+
+@{
+    ViewData["Title"] = "Match Details";
+}
+
+<div class="container mt-4">
+    <div class="text-center mb-5">
+        <h5 class="text-muted">@Model.SeasonName | @Model.MatchDate.ToString("dd.MM.yyyy HH:mm")</h5>
+        
+        <h1 class="display-4 fw-bold">
+            <span class="text-primary">WIR</span> @Model.OurScore : @Model.OpponentScore <span class="text-danger">@Model.OpponentName</span>
+        </h1>
+
+        <div class="mt-3">
+            <form asp-controller="Matches" asp-action="AddOpponentGoal" asp-route-id="@Model.MatchId" method="post">
+                <button type="submit" class="btn btn-outline-danger">
+                    + Tor für @Model.OpponentName eintragen
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Unsere Tore</h3>
+                <a asp-controller="Goals" asp-action="Create" asp-route-matchId="@Model.MatchId" class="btn btn-success">
+                    + Tor erfassen
+                </a>
+            </div>
+
+            @if (Model.Goals.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var goal in Model.Goals)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>🏒 @goal.ScorerName</strong>
+                                @if (!string.IsNullOrEmpty(goal.AssistName))
+                                {
+                                    <span class="text-muted ms-2">(Assist: @goal.AssistName)</span>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="alert alert-info">Noch keine Tore für dieses Match erfasst.</div>
+            }
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Kader (@Model.RosterNames.Count Spieler)</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var player in Model.RosterNames.OrderBy(n => n))
+                    {
+                        <li class="list-group-item">@player</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-secondary">Zurück zur Match-Übersicht</a>
+    </div>
+</div>
