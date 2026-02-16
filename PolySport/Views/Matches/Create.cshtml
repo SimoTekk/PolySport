@@ -1,0 +1,70 @@
+﻿@model PolySport.Models.ViewModels.CreateMatchViewModel
+
+@{
+    ViewData["Title"] = "Neues Match anlegen";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<h2>Neues Match anlegen</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="SeasonId" class="control-label"></label>
+                <select asp-for="SeasonId" class="form-control" asp-items="Model.AvailableSeasons">
+                    <option value="">-- Bitte Saison wählen --</option>
+                </select>
+                <span asp-validation-for="SeasonId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="OpponentName" class="control-label"></label>
+                <input asp-for="OpponentName" class="form-control" placeholder="z.B. SC Bern" />
+                <span asp-validation-for="OpponentName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="MatchDate" class="control-label"></label>
+                <input asp-for="MatchDate" class="form-control" type="date" />
+                <span asp-validation-for="MatchDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-4">
+                <label asp-for="SelectedPlayerIds" class="control-label">Spieler im Kader (Tippen zum Suchen)</label>
+                <select asp-for="SelectedPlayerIds" class="form-control select2-multiple" asp-items="Model.AvailablePlayers" multiple="multiple">
+                </select>
+                <span asp-validation-for="SelectedPlayerIds" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Match Speichern" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        // Sobald die Seite geladen ist, machen wir das Spieler-Dropdown "schlau"
+        $(document).ready(function() {
+            $('.select2-multiple').select2({
+                placeholder: "Spieler suchen und auswählen...",
+                allowClear: true,
+                width: '100%' // Passt sich der Breite des Formulars an
+            });
+        });
+    </script>
+}

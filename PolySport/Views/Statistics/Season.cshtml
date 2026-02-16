@@ -1,0 +1,69 @@
+﻿@model PolySport.Models.ViewModels.SeasonStatsViewModel
+
+@{
+    ViewData["Title"] = "Saison Statistik";
+    int rank = 1; // Zähler für den Tabellenplatz
+}
+
+<div class="container mt-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Top Scorer</h1>
+        <h4 class="text-muted">@Model.SeasonName</h4>
+    </div>
+
+    @if (Model.PlayerStats.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 10%;">Rang</th>
+                        <th>Spieler</th>
+                        <th class="text-center">Tore</th>
+                        <th class="text-center">Assists</th>
+                        <th class="text-center text-warning">Punkte</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stat in Model.PlayerStats)
+                    {
+                        <tr>
+                            <td>
+                                @if (rank == 1)
+                                {
+                                    <span>🥇 1</span>
+                                }
+                                else if (rank == 2)
+                                {
+
+                                    <span>🥈 2</span>
+                                }
+                                else if (rank == 3)
+                                {
+
+                                    <span>🥉 3</span>
+                                }
+                                else
+                                {
+
+                                    <strong>#@rank</strong>
+                                }
+                            </td>
+                            <td><strong class="text-primary">@stat.PlayerName</strong></td>
+                            <td class="text-center">@stat.Goals</td>
+                            <td class="text-center">@stat.Assists</td>
+                            <td class="text-center"><strong>@stat.TotalPoints</strong></td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            In dieser Saison wurden noch keine Tore erzielt. Spielt gefälligst offensiver! 🏒
+        </div>
+    }
+</div>

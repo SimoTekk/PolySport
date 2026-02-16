@@ -1,0 +1,60 @@
+﻿@model PolySport.Models.ViewModels.CreateGoalViewModel
+
+@{
+    ViewData["Title"] = "Tor erfassen";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<h2>Tor erfassen gegen @Model.OpponentName</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <input type="hidden" asp-for="MatchId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ScorerId" class="control-label"></label>
+                <select asp-for="ScorerId" class="form-control select2-single" asp-items="Model.MatchRoster">
+                    <option value="">-- Torschütze suchen --</option>
+                </select>
+                <span asp-validation-for="ScorerId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-4">
+                <label asp-for="AssistId" class="control-label"></label>
+                <select asp-for="AssistId" class="form-control select2-single" asp-items="Model.MatchRoster">
+                    <option value="">-- Keiner / Assist suchen --</option>
+                </select>
+                <span asp-validation-for="AssistId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Tor speichern" class="btn btn-success" />
+                <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.MatchId" class="btn btn-secondary ms-2">Zurück zum Match</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Aktiviert die Suchfunktion für beide Dropdowns
+            $('.select2-single').select2({
+                placeholder: "Name tippen...",
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
+}
