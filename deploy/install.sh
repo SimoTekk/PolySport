@@ -188,9 +188,26 @@ if [[ "$KEEP_ENV" -eq 0 ]]; then
     APP_PORT="$(ask 'Port für die Webseite' '8080')"
 
     info ""
-    info "Soll die Webseite direkt im Netz erreichbar sein (0.0.0.0),"
-    info "oder nur lokal (127.0.0.1), weil ein Reverse Proxy davorkommt?"
-    BIND_ADDRESS="$(ask 'Adresse' '0.0.0.0')"
+    info "Erreichbarkeit der Webseite:"
+    info "  1  im ganzen Netz – der übliche Fall"
+    info "  2  nur auf diesem Container, wenn ein Reverse Proxy davorkommt"
+    # Auswahl statt freier Adresseingabe: die Frage nach einer "Adresse"
+    # verleitet dazu, die IP des Containers einzutippen. Das funktioniert,
+    # schränkt aber unnötig ein und stiftet Verwirrung.
+    REACHABILITY="$(ask 'Auswahl' '1')"
+    case "$REACHABILITY" in
+        1|"")
+            BIND_ADDRESS="0.0.0.0"
+            ;;
+        2)
+            BIND_ADDRESS="127.0.0.1"
+            ;;
+        *)
+            # Wer bewusst eine bestimmte Adresse angibt, bekommt sie auch
+            BIND_ADDRESS="$REACHABILITY"
+            info "Eigene Adresse übernommen: $BIND_ADDRESS"
+            ;;
+    esac
 
     info ""
     ADMIN_EMAIL="$(ask 'E-Mail des ersten Admin-Kontos' 'admin@admin.com')"
