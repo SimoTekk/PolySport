@@ -1,0 +1,47 @@
+@model PolySport.Models.User
+@{
+    ViewData["Title"] = "Spieler bearbeiten";
+}
+
+<h2>Spieler bearbeiten</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group mb-3">
+                <label asp-for="Username" class="control-label"></label>
+                <input asp-for="Username" class="form-control" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+                <div class="form-text">
+                    Wird überall angezeigt – in Kader, Torfolge und Statistik.
+                    Bereits erfasste Tore und Einsätze bleiben erhalten.
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="control-label">E-Mail (optional)</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-4">
+                <label asp-for="Phone" class="control-label">Telefon (optional)</label>
+                <input asp-for="Phone" class="form-control" />
+                <span asp-validation-for="Phone" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Speichern" class="btn btn-success" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

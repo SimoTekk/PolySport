@@ -57,6 +57,7 @@
                     @if (isAdmin)
                     {
                         <td class="text-end">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Bearbeiten</a>
                             @if (item.IsActive)
                             {
                                 <form asp-action="SetActive" asp-route-id="@item.Id" method="post" class="d-inline">

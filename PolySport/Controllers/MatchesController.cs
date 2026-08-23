@@ -89,6 +89,71 @@ namespace PolySport.Controllers
             return View(viewModel);
         }
 
+        // GET: Matches/Edit/5 – Stammdaten ändern (Saison, Gegner, Datum)
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var match = await _context.Matches
+                .Include(m => m.Goals)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (match == null) return NotFound();
+
+            return View(new EditMatchViewModel
+            {
+                Id = match.Id,
+                SeasonId = match.SeasonId,
+                OpponentName = match.OpponentName,
+                MatchDate = match.MatchDate,
+                GoalCount = match.Goals.Count,
+                AvailableSeasons = await LoadSeasonsAsync()
+            });
+        }
+
+        // POST: Matches/Edit/5
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, EditMatchViewModel viewModel)
+        {
+            if (id != viewModel.Id) return NotFound();
+
+            var match = await _context.Matches.FindAsync(id);
+            if (match == null) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                match.SeasonId = viewModel.SeasonId;
+                match.OpponentName = viewModel.OpponentName;
+                match.MatchDate = viewModel.MatchDate;
+
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = "Die Angaben zum Match wurden gespeichert.";
+                return RedirectToAction(nameof(Details), new { id = match.Id });
+            }
+
+            viewModel.GoalCount = await _context.Goals.CountAsync(g => g.MatchId == id);
+            viewModel.AvailableSeasons = await LoadSeasonsAsync();
+            return View(viewModel);
+        }
+
+        /// <summary>Alle Saisons zur Auswahl, aktive zuerst.</summary>
+        private async Task<List<SelectListItem>> LoadSeasonsAsync()
+        {
+            return await _context.Seasons
+                .OrderByDescending(s => s.IsActive)
+                .ThenBy(s => s.Name)
+                .Select(s => new SelectListItem
+                {
+                    Value = s.Id.ToString(),
+                    Text = s.IsActive ? s.Name + " (aktiv)" : s.Name
+                })
+                .ToListAsync();
+        }
+
         // GET: Matches/Details/5
         public async Task<IActionResult> Details(int? id)
         {

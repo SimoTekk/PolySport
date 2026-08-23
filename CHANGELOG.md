@@ -6,6 +6,12 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.4.0 – 24.08.2026
+
+- **Spieler bearbeiten**: Name, E-Mail und Telefon lassen sich ändern. Bereits erfasste Tore und Einsätze bleiben erhalten – aus „Dummy1" wird also der richtige Name, ohne dass die Statistik leidet
+- **Match bearbeiten**: Saison, Gegner und Datum lassen sich nachträglich korrigieren. Ein vertippter Gegnername ist damit kein Dauerzustand mehr
+- Beim Wechsel der Saison weist das Formular darauf hin, wie viele Tore mitverschoben werden
+
 ## v1.3.1 – 24.08.2026
 
 - Admin-Rechte lassen sich in der Benutzerverwaltung vergeben und entziehen

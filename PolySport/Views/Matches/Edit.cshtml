@@ -1,0 +1,55 @@
+@model PolySport.Models.ViewModels.EditMatchViewModel
+@{
+    ViewData["Title"] = "Match bearbeiten";
+}
+
+<h2>Match bearbeiten</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group mb-3">
+                <label asp-for="SeasonId" class="control-label"></label>
+                <select asp-for="SeasonId" class="form-select" asp-items="Model.AvailableSeasons"></select>
+                <span asp-validation-for="SeasonId" class="text-danger"></span>
+                @if (Model.GoalCount > 0)
+                {
+                    <div class="form-text">
+                        An diesem Match hängen @Model.GoalCount Tore. Ein Wechsel der
+                        Saison verschiebt sie in die Statistik der neuen Saison.
+                    </div>
+                }
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="OpponentName" class="control-label"></label>
+                <input asp-for="OpponentName" class="form-control" placeholder="z.B. SC Bern" />
+                <span asp-validation-for="OpponentName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-4">
+                <label asp-for="MatchDate" class="control-label"></label>
+                <input asp-for="MatchDate" class="form-control" type="datetime-local" />
+                <span asp-validation-for="MatchDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Speichern" class="btn btn-success" />
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary ms-2">Abbrechen</a>
+            </div>
+        </form>
+
+        <p class="text-muted small mt-4 mb-0">
+            Kader und Tore werden hier nicht verändert. Tore lassen sich auf der
+            Detailseite einzeln löschen und neu erfassen.
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

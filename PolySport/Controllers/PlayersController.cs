@@ -25,6 +25,43 @@ namespace PolySport.Controllers
                 .ToListAsync());
         }
 
+        // GET: Spieler bearbeiten
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var player = await _context.Players.FindAsync(id);
+            if (player == null) return NotFound();
+
+            return View(player);
+        }
+
+        // POST: Änderungen speichern
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, User player)
+        {
+            if (id != player.Id) return NotFound();
+            if (!ModelState.IsValid) return View(player);
+
+            var existing = await _context.Players.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            // Nur die Stammdaten übernehmen. Der Status wird über die Liste
+            // umgeschaltet, und die Verknüpfungen zu Toren und Kadern bleiben
+            // dadurch unangetastet.
+            existing.Username = player.Username;
+            existing.Email = player.Email;
+            existing.Phone = player.Phone;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Spieler wurde auf \"{existing.Username}\" geändert.";
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST: Players/SetActive/5 – Spieler aktiv oder inaktiv setzen.
         // Inaktive Spieler bleiben in allen bisherigen Kadern und Toren erhalten,
         // sie stehen nur für neue Matches nicht mehr zur Auswahl (Soft-Delete).

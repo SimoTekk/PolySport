@@ -219,7 +219,13 @@
         </div>
     </div>
 
-    <div class="mt-4">
+    <div class="mt-4 d-flex flex-wrap gap-2">
         <a asp-action="Index" class="btn btn-secondary">Zurück zur Match-Übersicht</a>
+        @if (User.IsInRole(AppRoles.Admin))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.MatchId" class="btn btn-outline-primary">
+                Saison, Gegner oder Datum ändern
+            </a>
+        }
     </div>
 </div>
