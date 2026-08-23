@@ -1,0 +1,117 @@
+@model IEnumerable<PolySport.Models.ViewModels.UserApprovalViewModel>
+
+@{
+    ViewData["Title"] = "Benutzerverwaltung";
+    var pending = Model.Where(u => !u.IsApproved).ToList();
+    var approved = Model.Where(u => u.IsApproved).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <h2>Benutzerverwaltung</h2>
+    @if (pending.Any())
+    {
+        <span class="badge bg-danger fs-6">@pending.Count wartet auf Freigabe</span>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<h4 class="mt-4">Offene Registrierungen</h4>
+@if (pending.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>E-Mail</th>
+                    <th>Name</th>
+                    <th>Registriert am</th>
+                    <th class="text-end">Aktion</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in pending)
+                {
+                    <tr>
+                        <td><strong>@user.Email</strong></td>
+                        <td>@(string.IsNullOrWhiteSpace(user.FullName) ? user.DisplayName : user.FullName)</td>
+                        <td>@user.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="text-end">
+                            <form asp-action="Approve" asp-route-id="@user.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">✔ Freigeben</button>
+                            </form>
+                            @if (!user.IsCurrentUser && !user.IsAdmin)
+                            {
+                                <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Konto @user.Email endgültig löschen?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">✖ Ablehnen</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Keine offenen Registrierungen.</div>
+}
+
+<h4 class="mt-5">Freigegebene Benutzer</h4>
+<div class="table-responsive">
+    <table class="table table-striped align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>E-Mail</th>
+                <th>Name</th>
+                <th>Rolle</th>
+                <th>Freigegeben am</th>
+                <th class="text-end">Aktion</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in approved)
+            {
+                <tr>
+                    <td>
+                        <strong>@user.Email</strong>
+                        @if (user.IsCurrentUser)
+                        {
+                            <span class="badge bg-secondary ms-1">Du</span>
+                        }
+                    </td>
+                    <td>@(string.IsNullOrWhiteSpace(user.FullName) ? user.DisplayName : user.FullName)</td>
+                    <td>
+                        @if (user.IsAdmin)
+                        {
+                            <span class="badge bg-primary">Admin</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark">Mitglied</span>
+                        }
+                    </td>
+                    <td>@(user.ApprovedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                    <td class="text-end">
+                        @if (!user.IsCurrentUser)
+                        {
+                            <form asp-action="Revoke" asp-route-id="@user.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Freigabe für @user.Email entziehen? Der Benutzer wird abgemeldet.');">
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Freigabe entziehen</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

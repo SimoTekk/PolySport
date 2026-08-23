@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PolySport.Data;
@@ -7,6 +8,8 @@ using PolySport.Models.ViewModels;
 
 namespace PolySport.Controllers
 {
+    // Lesen: jedes angemeldete Mitglied. Schreiben: nur Admin (siehe Attribute unten).
+    [Authorize]
     public class MatchesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -17,6 +20,7 @@ namespace PolySport.Controllers
         }
 
         // GET: Matches/Create (Lädt das leere Formular)
+        [Authorize(Roles = AppRoles.Admin)]
         public IActionResult Create()
         {
             var viewModel = new CreateMatchViewModel
@@ -39,6 +43,7 @@ namespace PolySport.Controllers
 
         // POST: Matches/Create (Wird beim Klick auf Speichern aufgerufen)
         [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateMatchViewModel viewModel)
         {
@@ -49,8 +54,7 @@ namespace PolySport.Controllers
                 {
                     SeasonId = viewModel.SeasonId,
                     OpponentName = viewModel.OpponentName,
-                    MatchDate = viewModel.MatchDate,
-                    OpponentScore = 0 // Startet bei 0
+                    MatchDate = viewModel.MatchDate
                 };
 
                 _context.Matches.Add(match);
@@ -73,8 +77,8 @@ namespace PolySport.Controllers
                     await _context.SaveChangesAsync(); // Kader speichern
                 }
 
-                // Nach dem Speichern zurück zur Übersicht (Index) leiten
-                return RedirectToAction(nameof(Index));
+                // Direkt zur Detailseite, dort werden die Tore erfasst
+                return RedirectToAction(nameof(Details), new { id = match.Id });
             }
 
             // Falls jemand das Formular falsch ausfüllt (z.B. Gegner vergessen):
@@ -103,53 +107,178 @@ namespace PolySport.Controllers
 
             if (match == null) return NotFound();
 
-            // Befülle das ViewModel für die saubere Anzeige
             var viewModel = new MatchDetailsViewModel
             {
                 MatchId = match.Id,
                 SeasonName = match.Season?.Name ?? "Unbekannte Saison",
                 OpponentName = match.OpponentName,
                 MatchDate = match.MatchDate,
+                OurScore = match.OurScore,
                 OpponentScore = match.OpponentScore,
-                OurScore = match.Goals.Count, // Hier berechnen wir automatisch eure Tore!
+                IsFinished = match.IsFinished,
+                FinishedAt = match.FinishedAt,
+
+                CurrentPeriod = match.CurrentPeriod,
+                HasStarted = match.HasStarted,
+                IsPeriodRunning = match.IsPeriodRunning,
+                IsInBreak = match.IsInBreak,
+                CanStartNextPeriod = match.CanStartNextPeriod,
+                NextPeriod = match.NextPeriod,
+                ElapsedSecondsInPeriod = match.ElapsedSecondsInPeriod,
+                StatusLabel = match.StatusLabel,
 
                 // Liste der Spielernamen im Kader
                 RosterNames = match.MatchPlayers.Select(mp => mp.User!.Username).ToList(),
 
-                // Liste der Tore
-                Goals = match.Goals.Select(g => new GoalDisplay
-                {
-                    ScorerName = g.Scorer!.Username,
-                    AssistName = g.Assist?.Username // Null-sicher, falls es keinen Assist gab
-                }).ToList()
+                Timeline = BuildTimeline(match.Goals)
             };
 
             return View(viewModel);
         }
 
-        // POST: Matches/AddOpponentGoal/5
+        /// <summary>
+        /// Tore chronologisch sortieren und den Zwischenstand mitrechnen.
+        /// Tore ohne Zeitangabe (Altdaten) landen am Ende, damit der letzte
+        /// Zwischenstand trotzdem dem Endresultat entspricht.
+        /// </summary>
+        private static List<GoalDisplay> BuildTimeline(IEnumerable<Goal> goals)
+        {
+            var ordered = goals
+                .OrderBy(g => g.SortKey)
+                .ThenBy(g => g.Id)
+                .ToList();
+
+            var timeline = new List<GoalDisplay>();
+            var ours = 0;
+            var theirs = 0;
+
+            foreach (var goal in ordered)
+            {
+                if (goal.IsOpponentGoal) theirs++; else ours++;
+
+                timeline.Add(new GoalDisplay
+                {
+                    GoalId = goal.Id,
+                    IsOpponentGoal = goal.IsOpponentGoal,
+                    Period = goal.Period,
+                    SecondsInPeriod = goal.SecondsInPeriod,
+                    ScorerName = goal.Scorer?.Username,
+                    AssistName = goal.Assist?.Username,
+                    ScoreOurs = ours,
+                    ScoreOpponent = theirs
+                });
+            }
+
+            return timeline;
+        }
+
+        // POST: Matches/StartPeriod/5 – nächstes Drittel starten, Uhr läuft
         [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddOpponentGoal(int id)
+        public async Task<IActionResult> StartPeriod(int id)
         {
             var match = await _context.Matches.FindAsync(id);
             if (match == null) return NotFound();
 
-            // Gegner-Tore um 1 erhöhen
-            match.OpponentScore++;
+            if (match.IsFinished)
+            {
+                TempData["Error"] = "Das Match ist beendet. Öffne es wieder, um weiterzuspielen.";
+            }
+            else if (match.PeriodStartedAt.HasValue)
+            {
+                TempData["Error"] = "Die Uhr läuft bereits.";
+            }
+            else if (match.CurrentPeriod >= 3)
+            {
+                TempData["Error"] = "Alle drei Drittel sind gespielt. Beende das Match.";
+            }
+            else
+            {
+                match.CurrentPeriod += 1;
+                match.PeriodStartedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"{match.CurrentPeriod}. Drittel läuft.";
+            }
 
-            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Details), new { id = match.Id });
+        }
 
-            // Zurück zur Detailseite des Matches
+        // POST: Matches/EndPeriod/5 – Uhr anhalten, sie wartet auf das nächste Drittel
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EndPeriod(int id)
+        {
+            var match = await _context.Matches.FindAsync(id);
+            if (match == null) return NotFound();
+
+            if (!match.PeriodStartedAt.HasValue)
+            {
+                TempData["Error"] = "Die Uhr läuft gerade nicht.";
+            }
+            else
+            {
+                var period = match.CurrentPeriod;
+                match.PeriodStartedAt = null;
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = period >= 3
+                    ? "3. Drittel beendet. Du kannst das Match jetzt abschliessen."
+                    : $"{period}. Drittel beendet. Die Uhr wartet auf das {period + 1}. Drittel.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = match.Id });
+        }
+
+        // POST: Matches/Finish/5 – Spiel beenden, danach sind keine Tore mehr erfassbar
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Finish(int id)
+        {
+            var match = await _context.Matches.FindAsync(id);
+            if (match == null) return NotFound();
+
+            if (!match.IsFinished)
+            {
+                match.IsFinished = true;
+                match.FinishedAt = DateTime.UtcNow;
+                match.PeriodStartedAt = null; // Uhr anhalten
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Match beendet. Das Resultat zählt jetzt für die Bilanz.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = match.Id });
+        }
+
+        // POST: Matches/Reopen/5 – falls noch etwas nachgetragen werden muss
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reopen(int id)
+        {
+            var match = await _context.Matches.FindAsync(id);
+            if (match == null) return NotFound();
+
+            if (match.IsFinished)
+            {
+                match.IsFinished = false;
+                match.FinishedAt = null;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Match wieder geöffnet – Tore können nachgetragen werden.";
+            }
+
             return RedirectToAction(nameof(Details), new { id = match.Id });
         }
 
         // GET: Matches/Index (Die Übersicht aller Spiele)
         public async Task<IActionResult> Index()
         {
-            // Lade alle Matches und inkludiere die Saison-Daten für die Anzeige
+            // Tore mitladen, damit der Spielstand pro Zeile berechnet werden kann
             var matches = await _context.Matches
                 .Include(m => m.Season)
+                .Include(m => m.Goals)
                 .OrderByDescending(m => m.MatchDate) // Neueste Spiele zuerst
                 .ToListAsync();
 
@@ -157,4 +286,3 @@ namespace PolySport.Controllers
         }
     }
 }
-

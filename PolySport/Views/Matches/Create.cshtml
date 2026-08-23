@@ -4,7 +4,9 @@
     ViewData["Title"] = "Neues Match anlegen";
 }
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@section VendorStyles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}
 
 <h2>Neues Match anlegen</h2>
 <hr />
@@ -16,7 +18,7 @@
 
             <div class="form-group mb-3">
                 <label asp-for="SeasonId" class="control-label"></label>
-                <select asp-for="SeasonId" class="form-control" asp-items="Model.AvailableSeasons">
+                <select asp-for="SeasonId" class="form-select" asp-items="Model.AvailableSeasons">
                     <option value="">-- Bitte Saison wählen --</option>
                 </select>
                 <span asp-validation-for="SeasonId" class="text-danger"></span>
@@ -54,7 +56,8 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    @* jQuery kommt bereits aus dem Layout – ein zweites Laden würde die
+       vorher registrierte Validierung an eine andere jQuery-Instanz hängen. *@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>

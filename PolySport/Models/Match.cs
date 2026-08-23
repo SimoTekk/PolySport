@@ -1,4 +1,4 @@
-﻿using PolySport.Models;
+using PolySport.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,15 +19,81 @@ namespace PolySport.Models
         [Display(Name = "Gegner")]
         public string OpponentName { get; set; } = string.Empty;
 
-        [Display(Name = "Tore Gegner")]
-        public int OpponentScore { get; set; }
-
         [Required]
         [Display(Name = "Datum")]
         public DateTime MatchDate { get; set; } = DateTime.Now;
 
+        /// <summary>
+        /// Beendetes Spiel: das Resultat zählt für die Bilanz und es können
+        /// keine Tore mehr erfasst werden.
+        /// </summary>
+        [Display(Name = "Beendet")]
+        public bool IsFinished { get; set; }
+
+        public DateTime? FinishedAt { get; set; }
+
+        // --- Spieluhr ---------------------------------------------------
+        // Die Uhr läuft auf dem Server: gespeichert wird nur, welches Drittel
+        // aktuell dran ist und seit wann es läuft. Alles andere wird daraus
+        // berechnet, damit ein Seiten-Neuladen nichts verfälscht.
+
+        /// <summary>Letztes gestartetes Drittel. 0 = Spiel noch nicht gestartet.</summary>
+        [Display(Name = "Aktuelles Drittel")]
+        public int CurrentPeriod { get; set; }
+
+        /// <summary>
+        /// Startzeit (UTC) des laufenden Drittels. Null bedeutet: die Uhr steht –
+        /// entweder noch nicht gestartet oder Pause zwischen zwei Dritteln.
+        /// </summary>
+        public DateTime? PeriodStartedAt { get; set; }
+
         // Navigation Properties
         public ICollection<MatchPlayer> MatchPlayers { get; set; } = new List<MatchPlayer>();
         public ICollection<Goal> Goals { get; set; } = new List<Goal>();
+
+        // Der Spielstand wird aus den Tor-Datensätzen berechnet, damit es
+        // keine zweite Wahrheit neben den Toren gibt.
+        [NotMapped]
+        public int OurScore => Goals.Count(g => !g.IsOpponentGoal);
+
+        [NotMapped]
+        public int OpponentScore => Goals.Count(g => g.IsOpponentGoal);
+
+        [NotMapped]
+        public bool HasStarted => CurrentPeriod > 0;
+
+        /// <summary>Die Uhr läuft gerade.</summary>
+        [NotMapped]
+        public bool IsPeriodRunning => !IsFinished && PeriodStartedAt.HasValue;
+
+        /// <summary>Pause zwischen zwei Dritteln – die Uhr wartet auf den nächsten Start.</summary>
+        [NotMapped]
+        public bool IsInBreak => !IsFinished && HasStarted && !PeriodStartedAt.HasValue;
+
+        [NotMapped]
+        public bool CanStartNextPeriod => !IsFinished && !PeriodStartedAt.HasValue && CurrentPeriod < 3;
+
+        [NotMapped]
+        public int NextPeriod => CurrentPeriod + 1;
+
+        /// <summary>Sekunden seit dem Start des laufenden Drittels.</summary>
+        [NotMapped]
+        public int ElapsedSecondsInPeriod => PeriodStartedAt.HasValue
+            ? Math.Max(0, (int)(DateTime.UtcNow - PeriodStartedAt.Value).TotalSeconds)
+            : 0;
+
+        [NotMapped]
+        public string StatusLabel
+        {
+            get
+            {
+                if (IsFinished) return "Beendet";
+                if (IsPeriodRunning) return $"{CurrentPeriod}. Drittel läuft";
+                if (IsInBreak) return CurrentPeriod >= 3
+                    ? "3. Drittel beendet"
+                    : $"Pause nach dem {CurrentPeriod}. Drittel";
+                return "Nicht gestartet";
+            }
+        }
     }
 }

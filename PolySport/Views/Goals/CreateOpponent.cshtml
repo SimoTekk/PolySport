@@ -1,54 +1,33 @@
-@model PolySport.Models.ViewModels.CreateGoalViewModel
+@model PolySport.Models.ViewModels.CreateOpponentGoalViewModel
 
 @{
-    ViewData["Title"] = "Tor erfassen";
+    ViewData["Title"] = "Gegentor erfassen";
 }
 
-@section VendorStyles {
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-}
-
-<h2>Tor erfassen gegen @Model.OpponentName</h2>
+<h2>Gegentor für @Model.OpponentName erfassen</h2>
 <hr />
 
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Create">
+        <form asp-action="CreateOpponent">
             <input type="hidden" asp-for="MatchId" />
             <input type="hidden" asp-for="LiveClock" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             @if (Model.LiveClock)
             {
-                @* Zeit kommt von der laufenden Uhr – festgehalten beim Öffnen dieser Seite *@
                 <input type="hidden" asp-for="Period" />
                 <input type="hidden" asp-for="SecondsInPeriod" />
 
                 <div class="alert alert-success d-flex justify-content-between align-items-center">
-                    <span>Zeitpunkt des Tores</span>
+                    <span>Zeitpunkt des Gegentores</span>
                     <span class="fs-4 font-monospace">@Model.Period. Drittel, @Model.CapturedTimeLabel</span>
                 </div>
+
+                <p class="text-muted">Ein Torschütze wird bei Gegentoren nicht erfasst.</p>
             }
-
-            <div class="form-group mb-3">
-                <label asp-for="ScorerId" class="control-label"></label>
-                <select asp-for="ScorerId" class="form-control select2-single" asp-items="Model.MatchRoster">
-                    <option value="">-- Torschütze suchen --</option>
-                </select>
-                <span asp-validation-for="ScorerId" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="AssistId" class="control-label"></label>
-                <select asp-for="AssistId" class="form-control select2-single" asp-items="Model.MatchRoster">
-                    <option value="">-- Keiner / Assist suchen --</option>
-                </select>
-                <span asp-validation-for="AssistId" class="text-danger"></span>
-            </div>
-
-            @if (!Model.LiveClock)
+            else
             {
-                @* Uhr steht: Zeit von Hand nachtragen *@
                 <div class="alert alert-warning">
                     Die Spieluhr läuft nicht. Trage Drittel und Minute von Hand nach.
                 </div>
@@ -76,7 +55,7 @@
             }
 
             <div class="form-group">
-                <input type="submit" value="Tor speichern" class="btn btn-success" />
+                <input type="submit" value="Gegentor speichern" class="btn btn-danger" />
                 <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.MatchId" class="btn btn-secondary ms-2">Zurück zum Match</a>
             </div>
         </form>
@@ -84,22 +63,5 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-
-    @* jQuery kommt bereits aus dem Layout – ein zweites Laden würde die
-       vorher registrierte Validierung an eine andere jQuery-Instanz hängen. *@
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Aktiviert die Suchfunktion für beide Dropdowns
-            $('.select2-single').select2({
-                placeholder: "Name tippen...",
-                allowClear: true,
-                width: '100%'
-            });
-        });
-    </script>
+    <partial name="_ValidationScriptsPartial" />
 }

@@ -1,51 +1,194 @@
-﻿@model PolySport.Models.ViewModels.MatchDetailsViewModel
+@model PolySport.Models.ViewModels.MatchDetailsViewModel
 
 @{
     ViewData["Title"] = "Match Details";
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+    var resultClass = Model.ResultLabel == "Sieg" ? "bg-success"
+                    : Model.ResultLabel == "Niederlage" ? "bg-danger" : "bg-secondary";
 }
 
 <div class="container mt-4">
-    <div class="text-center mb-5">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="text-center mb-4">
         <h5 class="text-muted">@Model.SeasonName | @Model.MatchDate.ToString("dd.MM.yyyy HH:mm")</h5>
-        
+
         <h1 class="display-4 fw-bold">
             <span class="text-primary">WIR</span> @Model.OurScore : @Model.OpponentScore <span class="text-danger">@Model.OpponentName</span>
         </h1>
 
-        <div class="mt-3">
-            <form asp-controller="Matches" asp-action="AddOpponentGoal" asp-route-id="@Model.MatchId" method="post">
-                <button type="submit" class="btn btn-outline-danger">
-                    + Tor für @Model.OpponentName eintragen
-                </button>
-            </form>
+        @* Spieluhr: der Startwert kommt vom Server, das Weiterzählen macht site.js *@
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+            <span class="display-6 font-monospace" id="matchClock"
+                  data-running="@(Model.IsPeriodRunning ? "true" : "false")"
+                  data-elapsed="@Model.ElapsedSecondsInPeriod">
+                @PolySport.Models.Goal.FormatTime(Model.HasStarted ? Model.ElapsedSecondsInPeriod : 0)
+            </span>
+            @if (Model.IsFinished)
+            {
+                <span class="badge @resultClass fs-6">@Model.ResultLabel</span>
+                <span class="badge bg-secondary fs-6">Beendet</span>
+            }
+            else if (Model.IsPeriodRunning)
+            {
+                <span class="badge bg-success fs-6">@Model.StatusLabel</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6">@Model.StatusLabel</span>
+            }
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Unsere Tore</h3>
-                <a asp-controller="Goals" asp-action="Create" asp-route-matchId="@Model.MatchId" class="btn btn-success">
-                    + Tor erfassen
-                </a>
-            </div>
-
-            @if (Model.Goals.Any())
-            {
-                <ul class="list-group">
-                    @foreach (var goal in Model.Goals)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>🏒 @goal.ScorerName</strong>
-                                @if (!string.IsNullOrEmpty(goal.AssistName))
+    @* Steuerung: Drittel starten/beenden, Tore erfassen, Match abschliessen *@
+    @if (isAdmin)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        @if (Model.IsFinished)
+                        {
+                            <strong>Match ist beendet</strong>
+                            <div class="text-muted small">
+                                @if (Model.FinishedAt.HasValue)
                                 {
-                                    <span class="text-muted ms-2">(Assist: @goal.AssistName)</span>
+                                    <span>Beendet am @Model.FinishedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
                                 }
                             </div>
-                        </li>
-                    }
-                </ul>
+                        }
+                        else if (!Model.HasStarted)
+                        {
+                            <strong>Match noch nicht gestartet</strong>
+                            <div class="text-muted small">Starte das 1. Drittel – danach werden Tore automatisch mit der Spielzeit erfasst.</div>
+                        }
+                        else if (Model.IsPeriodRunning)
+                        {
+                            <strong>@Model.CurrentPeriod. Drittel läuft</strong>
+                            <div class="text-muted small">Tore bekommen die Zeit des Klicks automatisch.</div>
+                        }
+                        else
+                        {
+                            <strong>@Model.StatusLabel</strong>
+                            <div class="text-muted small">
+                                @if (Model.CanStartNextPeriod)
+                                {
+                                    <span>Die Uhr wartet auf den Start des @Model.NextPeriod. Drittels.</span>
+                                }
+                                else
+                                {
+                                    <span>Alle Drittel gespielt – du kannst das Match abschliessen.</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        @if (Model.IsFinished)
+                        {
+                            <form asp-action="Reopen" asp-route-id="@Model.MatchId" method="post">
+                                <button type="submit" class="btn btn-outline-primary">Wieder öffnen</button>
+                            </form>
+                        }
+                        else
+                        {
+                            @if (Model.IsPeriodRunning)
+                            {
+                                <a asp-controller="Goals" asp-action="Create" asp-route-matchId="@Model.MatchId" class="btn btn-success">
+                                    + Unser Tor
+                                </a>
+                                <a asp-controller="Goals" asp-action="CreateOpponent" asp-route-matchId="@Model.MatchId" class="btn btn-outline-danger">
+                                    + Gegentor
+                                </a>
+                                <form asp-action="EndPeriod" asp-route-id="@Model.MatchId" method="post">
+                                    <button type="submit" class="btn btn-warning">@Model.CurrentPeriod. Drittel beenden</button>
+                                </form>
+                            }
+                            else if (Model.CanStartNextPeriod)
+                            {
+                                <form asp-action="StartPeriod" asp-route-id="@Model.MatchId" method="post">
+                                    <button type="submit" class="btn btn-primary">@Model.NextPeriod. Drittel starten</button>
+                                </form>
+                            }
+
+                            @if (Model.HasStarted)
+                            {
+                                <form asp-action="Finish" asp-route-id="@Model.MatchId" method="post"
+                                      onsubmit="return confirm('Match wirklich beenden? Danach sind keine Tore mehr erfassbar.');">
+                                    <button type="submit" class="btn btn-outline-primary">Match beenden</button>
+                                </form>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @if (!Model.IsFinished && !Model.IsPeriodRunning && Model.HasStarted)
+                {
+                    <hr />
+                    <div class="small text-muted">
+                        Bei stehender Uhr kannst du ein Tor
+                        <a asp-controller="Goals" asp-action="Create" asp-route-matchId="@Model.MatchId">nachtragen</a>
+                        oder ein
+                        <a asp-controller="Goals" asp-action="CreateOpponent" asp-route-matchId="@Model.MatchId">Gegentor nachtragen</a>
+                        – dort gibst du Drittel und Minute selbst an.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <h3>Torfolge</h3>
+
+            @if (Model.Timeline.Any())
+            {
+                @foreach (var group in Model.Timeline.GroupBy(g => g.Period).OrderBy(g => g.Key ?? int.MaxValue))
+                {
+                    <h6 class="text-muted text-uppercase small mt-3">
+                        @(group.Key.HasValue ? $"{group.Key}. Drittel" : "Ohne Zeitangabe")
+                    </h6>
+                    <ul class="list-group mb-2">
+                        @foreach (var goal in group)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-secondary font-monospace" style="min-width: 4rem;">@goal.TimeLabel</span>
+                                    <span class="fw-bold" style="min-width: 3.5rem;">@goal.ScoreOurs : @goal.ScoreOpponent</span>
+                                    <span>
+                                        @if (goal.IsOpponentGoal)
+                                        {
+                                            <span class="text-danger">Tor @Model.OpponentName</span>
+                                        }
+                                        else
+                                        {
+                                            <strong>@goal.ScorerName</strong>
+                                            @if (!string.IsNullOrEmpty(goal.AssistName))
+                                            {
+                                                <span class="text-muted ms-2">(Assist: @goal.AssistName)</span>
+                                            }
+                                        }
+                                    </span>
+                                </div>
+                                @if (isAdmin && !Model.IsFinished)
+                                {
+                                    <form asp-controller="Goals" asp-action="Delete" asp-route-id="@goal.GoalId" method="post"
+                                          onsubmit="return confirm('Dieses Tor löschen?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
             }
             else
             {
@@ -55,15 +198,22 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header">
                     <h5 class="mb-0">Kader (@Model.RosterNames.Count Spieler)</h5>
                 </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var player in Model.RosterNames.OrderBy(n => n))
-                    {
-                        <li class="list-group-item">@player</li>
-                    }
-                </ul>
+                @if (Model.RosterNames.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var player in Model.RosterNames.OrderBy(n => n))
+                        {
+                            <li class="list-group-item">@player</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="card-body text-muted">Kein Kader erfasst.</div>
+                }
             </div>
         </div>
     </div>

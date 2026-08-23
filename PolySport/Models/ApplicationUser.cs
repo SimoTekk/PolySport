@@ -11,5 +11,12 @@ namespace PolySport.Models
         public string? ProfileImageUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastModifiedAt { get; set; }
+
+        /// <summary>
+        /// Freigabe durch einen Admin. Ohne Freigabe ist keine Anmeldung möglich
+        /// (siehe AdminApprovalUserConfirmation).
+        /// </summary>
+        public bool IsApproved { get; set; }
+        public DateTime? ApprovedAt { get; set; }
     }
 }

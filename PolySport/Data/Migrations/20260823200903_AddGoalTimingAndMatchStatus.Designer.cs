@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PolySport.Data;
 
@@ -11,9 +12,11 @@ using PolySport.Data;
 namespace PolySport.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823200903_AddGoalTimingAndMatchStatus")]
+    partial class AddGoalTimingAndMatchStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,13 +271,13 @@ namespace PolySport.Data.Migrations
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MinuteInPeriod")
+                        .HasColumnType("int");
+
                     b.Property<int?>("Period")
                         .HasColumnType("int");
 
                     b.Property<int?>("ScorerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SecondsInPeriod")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -296,9 +299,6 @@ namespace PolySport.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CurrentPeriod")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("datetime2");
 
@@ -311,9 +311,6 @@ namespace PolySport.Data.Migrations
                     b.Property<string>("OpponentName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("PeriodStartedAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
