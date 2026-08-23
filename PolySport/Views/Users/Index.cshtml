@@ -23,6 +23,13 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
+<p class="text-muted">
+    <strong>Mitglied</strong> sieht Matches und Statistiken, ändert aber nichts.
+    <strong>Manager</strong> leitet Spiele: Spieluhr bedienen, Tore erfassen und
+    korrigieren, Match beenden – aber keine Matches anlegen und nichts verwalten.
+    <strong>Admin</strong> darf alles.
+</p>
+
 <h4 class="mt-4">Offene Registrierungen</h4>
 @if (pending.Any())
 {
@@ -95,6 +102,10 @@ else
                         {
                             <span class="badge bg-primary">Admin</span>
                         }
+                        else if (user.IsManager)
+                        {
+                            <span class="badge bg-info text-dark">Manager</span>
+                        }
                         else
                         {
                             <span class="badge bg-light text-dark">Mitglied</span>
@@ -102,6 +113,23 @@ else
                     </td>
                     <td>@(user.ApprovedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
                     <td class="text-end">
+                        @if (!user.IsAdmin)
+                        {
+                            @if (user.IsManager)
+                            {
+                                <form asp-action="SetManager" asp-route-id="@user.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="isManager" value="false" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Manager entziehen</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="SetManager" asp-route-id="@user.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="isManager" value="true" />
+                                    <button type="submit" class="btn btn-sm btn-outline-info">Zum Manager machen</button>
+                                </form>
+                            }
+                        }
                         @if (!user.IsCurrentUser)
                         {
                             <form asp-action="Revoke" asp-route-id="@user.Id" method="post" class="d-inline"

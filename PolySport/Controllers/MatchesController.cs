@@ -174,7 +174,7 @@ namespace PolySport.Controllers
 
         // POST: Matches/StartPeriod/5 – nächstes Drittel starten, Uhr läuft
         [HttpPost]
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Roles = AppRoles.AdminOrManager)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> StartPeriod(int id)
         {
@@ -206,7 +206,7 @@ namespace PolySport.Controllers
 
         // POST: Matches/EndPeriod/5 – Uhr anhalten, sie wartet auf das nächste Drittel
         [HttpPost]
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Roles = AppRoles.AdminOrManager)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EndPeriod(int id)
         {
@@ -233,7 +233,7 @@ namespace PolySport.Controllers
 
         // POST: Matches/Finish/5 – Spiel beenden, danach sind keine Tore mehr erfassbar
         [HttpPost]
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Roles = AppRoles.AdminOrManager)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Finish(int id)
         {
@@ -254,7 +254,7 @@ namespace PolySport.Controllers
 
         // POST: Matches/Reopen/5 – falls noch etwas nachgetragen werden muss
         [HttpPost]
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Roles = AppRoles.AdminOrManager)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reopen(int id)
         {

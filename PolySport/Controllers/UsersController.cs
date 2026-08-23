@@ -26,8 +26,10 @@ namespace PolySport.Controllers
                 .ThenBy(u => u.CreatedAt)
                 .ToListAsync();
 
-            var admins = await _userManager.GetUsersInRoleAsync(AppRoles.Admin);
-            var adminIds = admins.Select(a => a.Id).ToHashSet();
+            var adminIds = (await _userManager.GetUsersInRoleAsync(AppRoles.Admin))
+                .Select(a => a.Id).ToHashSet();
+            var managerIds = (await _userManager.GetUsersInRoleAsync(AppRoles.Manager))
+                .Select(m => m.Id).ToHashSet();
             var currentUserId = _userManager.GetUserId(User);
 
             var viewModel = users.Select(u => new UserApprovalViewModel
@@ -40,6 +42,7 @@ namespace PolySport.Controllers
                 IsApproved = u.IsApproved,
                 ApprovedAt = u.ApprovedAt,
                 IsAdmin = adminIds.Contains(u.Id),
+                IsManager = managerIds.Contains(u.Id),
                 IsCurrentUser = u.Id == currentUserId
             }).ToList();
 
@@ -89,6 +92,42 @@ namespace PolySport.Controllers
             await _userManager.UpdateSecurityStampAsync(user);
 
             TempData["Success"] = $"Freigabe für {user.Email} entzogen.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Users/SetManager/{id} – Rolle Manager vergeben oder entziehen
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetManager(string id, bool isManager)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
+
+            if (await _userManager.IsInRoleAsync(user, AppRoles.Admin))
+            {
+                TempData["Error"] = "Admins können bereits alles – die Rolle Manager ändert daran nichts.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var result = isManager
+                ? await _userManager.AddToRoleAsync(user, AppRoles.Manager)
+                : await _userManager.RemoveFromRoleAsync(user, AppRoles.Manager);
+
+            if (!result.Succeeded)
+            {
+                TempData["Error"] = $"Rolle konnte nicht geändert werden: "
+                    + string.Join(", ", result.Errors.Select(e => e.Description));
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Erneuert das Anmelde-Cookie, damit die neue Rolle sofort gilt
+            // und der Benutzer sich nicht neu anmelden muss.
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            TempData["Success"] = isManager
+                ? $"{user.Email} kann jetzt Spiele leiten und Tore erfassen."
+                : $"{user.Email} ist wieder einfaches Mitglied und kann nur noch mitlesen.";
+
             return RedirectToAction(nameof(Index));
         }
 

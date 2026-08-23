@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PolySport.Controllers
 {
-    // Tore erfassen darf nur der Admin.
-    [Authorize(Roles = AppRoles.Admin)]
+    // Tore erfassen dürfen Admins und Manager – wer das Spiel leitet.
+    [Authorize(Roles = AppRoles.AdminOrManager)]
     public class GoalsController : Controller
     {
         private readonly ApplicationDbContext _context;

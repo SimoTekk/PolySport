@@ -14,5 +14,10 @@ namespace PolySport.Models.ViewModels
         /// <summary>Admins dürfen sich selbst nicht sperren oder löschen.</summary>
         public bool IsCurrentUser { get; set; }
         public bool IsAdmin { get; set; }
+
+        /// <summary>Darf Spiele leiten: Uhr bedienen und Tore erfassen.</summary>
+        public bool IsManager { get; set; }
+
+        public string RoleLabel => IsAdmin ? "Admin" : IsManager ? "Manager" : "Mitglied";
     }
 }

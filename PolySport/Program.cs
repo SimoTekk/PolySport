@@ -69,8 +69,11 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    if (!await roleManager.RoleExistsAsync(AppRoles.Admin))
-        await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
+    foreach (var role in AppRoles.All)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
 
     // Zugangsdaten des ersten Admins kommen aus der Konfiguration
     // (Umgebungsvariablen Seed__AdminEmail / Seed__AdminPassword).

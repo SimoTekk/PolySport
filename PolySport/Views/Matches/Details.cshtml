@@ -2,7 +2,8 @@
 
 @{
     ViewData["Title"] = "Match Details";
-    var isAdmin = User.IsInRole(AppRoles.Admin);
+    // Spiele leiten dürfen Admins und Manager
+    var canManage = User.CanManageMatches();
     var resultClass = Model.ResultLabel == "Sieg" ? "bg-success"
                     : Model.ResultLabel == "Niederlage" ? "bg-danger" : "bg-secondary";
 }
@@ -49,7 +50,7 @@
     </div>
 
     @* Steuerung: Drittel starten/beenden, Tore erfassen, Match abschliessen *@
-    @if (isAdmin)
+    @if (canManage)
     {
         <div class="card mb-4">
             <div class="card-body">
@@ -178,7 +179,7 @@
                                         }
                                     </span>
                                 </div>
-                                @if (isAdmin && !Model.IsFinished)
+                                @if (canManage && !Model.IsFinished)
                                 {
                                     <form asp-controller="Goals" asp-action="Delete" asp-route-id="@goal.GoalId" method="post"
                                           onsubmit="return confirm('Dieses Tor löschen?');">
