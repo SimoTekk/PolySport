@@ -124,15 +124,21 @@ namespace PolySport.Services
                 }
 
                 var current = ParseVersion(_currentVersion);
-                var available = current == null || latest.Version! > current;
 
+                // Ist die laufende Version unbekannt (POLYSPORT_VERSION nicht
+                // gesetzt, etwa in der Entwicklung), lässt sich nichts
+                // vergleichen. Dann wird die neueste Version nur angezeigt und
+                // kein Update gemeldet – sonst stünde dauerhaft ein Hinweis da.
                 return Store(new UpdateInfo
                 {
                     CurrentVersion = _currentVersion,
                     LatestVersion = latest.Name,
-                    IsUpdateAvailable = available,
+                    IsUpdateAvailable = current != null && latest.Version! > current,
                     CheckedAt = DateTime.UtcNow,
-                    ReleaseUrl = $"https://github.com/{_repository}/releases/tag/{latest.Name}"
+                    ReleaseUrl = $"https://github.com/{_repository}/releases/tag/{latest.Name}",
+                    Error = current == null
+                        ? "Installierte Version unbekannt, Vergleich nicht möglich"
+                        : null
                 });
             }
             catch (Exception ex)
