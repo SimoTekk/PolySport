@@ -84,14 +84,21 @@
 else if (status.State == UpdateState.Success)
 {
     <div class="alert alert-success mt-4">
-        <strong>Letztes Update erfolgreich.</strong>
-        @if (!string.IsNullOrEmpty(status.Version))
+        <div>
+            <strong>Letztes Update erfolgreich.</strong>
+            @if (!string.IsNullOrEmpty(status.Version))
+            {
+                <span>Version @status.Version</span>
+            }
+            @if (status.UpdatedAt.HasValue)
+            {
+                <span class="text-muted">(@status.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))</span>
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(status.Message))
         {
-            <span>Version @status.Version</span>
-        }
-        @if (status.UpdatedAt.HasValue)
-        {
-            <span class="text-muted">(@status.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))</span>
+            @* Kann einen Hinweis enthalten, etwa dass der Port nicht erreichbar war *@
+            <div class="small mt-1">@status.Message</div>
         }
     </div>
 }

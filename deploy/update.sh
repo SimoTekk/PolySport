@@ -109,17 +109,34 @@ case "${BIND_ADDRESS:-0.0.0.0}" in
     *)             CHECK_HOST="$BIND_ADDRESS" ;;
 esac
 
-for _ in $(seq 1 60); do
+# Läuft der Anwendungscontainer? Das ist das entscheidende Kriterium –
+# ob der Port vom Host aus erreichbar ist, sagt über den Erfolg des
+# Updates wenig aus.
+app_running() {
+    docker compose ps --services --status running 2>/dev/null | grep -qx app \
+        || docker compose ps app 2>/dev/null | grep -qiE '[[:space:]]up[[:space:]]'
+}
+
+# Zwei Minuten auf eine Antwort warten
+for _ in $(seq 1 24); do
     if curl -fsS -o /dev/null "http://${CHECK_HOST}:${APP_PORT}/" 2>/dev/null; then
+        printf 'POLYSPORT_RESULT=Update auf %s abgeschlossen, die Webseite antwortet.\n' "$TARGET"
         printf '\n%sAktualisierung abgeschlossen – die Webseite antwortet.%s\n' "$GREEN" "$RESET"
         exit 0
     fi
     sleep 5
 done
 
-# Maschinenlesbarer Grund, damit die Weboberfläche eine brauchbare
-# Meldung zeigt statt der letzten Zeilen einer Tabelle.
-printf 'POLYSPORT_RESULT=Neue Version läuft, aber http://%s:%s antwortete innerhalb von 5 Minuten nicht\n' \
-    "$CHECK_HOST" "$APP_PORT"
-warn "Die Webseite antwortet noch nicht. Protokoll: cd $INSTALL_DIR && docker compose logs -f"
+# Keine Antwort – aber wenn der Container läuft, ist das Update angewendet.
+# Ein nicht erreichbarer Port ist dann eine Randnotiz, kein Fehlschlag.
+if app_running; then
+    printf 'POLYSPORT_RESULT=Update auf %s angewendet. Der Container läuft, war über http://%s:%s aber nicht erreichbar – bitte im Browser prüfen.\n' \
+        "$TARGET" "$CHECK_HOST" "$APP_PORT"
+    warn "Container läuft, aber http://${CHECK_HOST}:${APP_PORT} antwortete nicht."
+    warn "Das Update ist angewendet. Erreichbarkeit im Browser prüfen."
+    exit 0
+fi
+
+printf 'POLYSPORT_RESULT=Der Anwendungscontainer läuft nach dem Update nicht. Protokoll: cd %s && docker compose logs app\n' "$INSTALL_DIR"
+warn "Der Anwendungscontainer läuft nicht. Protokoll: cd $INSTALL_DIR && docker compose logs app"
 exit 1

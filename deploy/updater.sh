@@ -54,7 +54,10 @@ write_status running "Sicherung und Aktualisierung laufen" "$VERSION"
 LOG="$STATE_DIR/update-last.log"
 if POLYSPORT_ASSUME_YES=1 POLYSPORT_TARGET="$VERSION" \
         bash "$INSTALL_DIR/deploy/update.sh" >"$LOG" 2>&1; then
-    write_status success "Update auf ${VERSION} abgeschlossen" "$VERSION"
+    # Meldung des Skripts übernehmen, falls es eine gibt – sie kann einen
+    # Hinweis enthalten, etwa dass der Port nicht erreichbar war.
+    RESULT="$(grep -m1 '^POLYSPORT_RESULT=' "$LOG" 2>/dev/null | cut -d= -f2- | cut -c1-300)"
+    write_status success "${RESULT:-Update auf ${VERSION} abgeschlossen}" "$VERSION"
     FINAL_WRITTEN=1
     echo "Update erfolgreich."
     exit 0
