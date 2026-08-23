@@ -17,12 +17,11 @@ namespace PolySport.Controllers
         }
 
         // GET: Update
-        public async Task<IActionResult> Index(bool refresh = false)
+        public async Task<IActionResult> Index()
         {
-            // Beim Öffnen der Seite frisch prüfen, sonst den Zwischenspeicher nutzen
-            var info = refresh || _updateService.Cached.CheckedAt == null
-                ? await _updateService.CheckAsync()
-                : _updateService.Cached;
+            // Immer frisch prüfen: wer diese Seite öffnet, will den aktuellen
+            // Stand sehen und nicht das Ergebnis der letzten Hintergrundprüfung.
+            var info = await _updateService.CheckAsync();
 
             ViewBag.CanInstall = _updateService.CanInstallUpdates;
             ViewBag.Status = _updateService.GetStatus();

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="PolySport">
+  <!-- Gefüllte Kachel, damit das Zeichen auf hellen wie dunklen
+       Browser-Leisten sichtbar bleibt. -->
+  <rect width="32" height="32" rx="7" fill="#0d6efd"/>
+
+  <!-- Eishockeyschläger: langer Schaft von oben rechts, kurze kräftige Kelle.
+       Der Puck steht frei, damit die Form auch bei 16 Pixel lesbar bleibt. -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24.5 5.5 L12.2 19.2" stroke-width="3.2"/>
+    <path d="M11.6 20 L18 22.9" stroke-width="5"/>
+  </g>
+
+  <ellipse cx="25.3" cy="25.6" rx="3.2" ry="2.2" fill="#ffffff"/>
+</svg>

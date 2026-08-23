@@ -284,10 +284,29 @@ fi
 
 IP_ADDRESS="$(hostname -I 2>/dev/null | awk '{print $1}')"
 ADMIN_EMAIL="$(grep -E '^ADMIN_EMAIL=' .env | cut -d= -f2-)"
+BIND_ADDRESS="$(grep -E '^BIND_ADDRESS=' .env | cut -d= -f2-)"
+BIND_ADDRESS="${BIND_ADDRESS:-0.0.0.0}"
 
 printf '\n%s%s%s\n' "$GREEN" "Fertig – PolySport läuft." "$RESET"
 printf '\n'
-printf '  Webseite:   http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
+
+# Bei einer Bindung auf die Loopback-Adresse wäre die Angabe der Netz-IP
+# schlicht falsch – dann ist die Seite nur auf dem Container selbst erreichbar.
+if [[ "$BIND_ADDRESS" == "127.0.0.1" || "$BIND_ADDRESS" == "localhost" ]]; then
+    printf '  Webseite:   http://127.0.0.1:%s  %s(nur auf diesem Container)%s\n' "$APP_PORT" "$YELLOW" "$RESET"
+    printf '\n'
+    printf '  %sHinweis:%s die Seite ist absichtlich nicht im Netz veröffentlicht.\n' "$YELLOW" "$RESET"
+    printf '  Für Zugriff von anderen Geräten entweder einen Reverse Proxy\n'
+    printf '  davorsetzen (siehe README) oder die Bindung umstellen:\n'
+    printf '\n'
+    printf "    sed -i 's/^BIND_ADDRESS=.*/BIND_ADDRESS=0.0.0.0/' %s/.env\n" "$INSTALL_DIR"
+    printf '    cd %s && docker compose up -d\n' "$INSTALL_DIR"
+    printf '\n'
+    printf '  Danach erreichbar unter http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
+else
+    printf '  Webseite:   http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
+fi
+
 printf '  Anmeldung:  %s\n' "$ADMIN_EMAIL"
 printf '  Passwort:   wie beim Setup angegeben\n'
 printf '\n'
