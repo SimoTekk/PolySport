@@ -1,0 +1,21 @@
+# Build-Ausgaben – im Container wird frisch gebaut
+**/bin/
+**/obj/
+**/out/
+
+# Werkzeuge und lokale Einstellungen
+.git/
+.gitignore
+.vs/
+.vscode/
+**/*.user
+**/*.suo
+**/.config/
+
+# Umgebung und Dokumentation gehören nicht ins Image
+.env
+.env.*
+!.env.example
+deploy/
+README.md
+*.md

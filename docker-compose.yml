@@ -1,0 +1,55 @@
+# PolySport – Webanwendung und Datenbank in einem Rutsch.
+# Die Werte kommen aus der Datei .env, die das Setup-Skript anlegt
+# (Vorlage: .env.example).
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: polysport-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?MSSQL_SA_PASSWORD fehlt in .env}
+      # Express ist kostenlos nutzbar und begrenzt den Speicherhunger.
+      MSSQL_PID: ${MSSQL_PID:-Express}
+    volumes:
+      - db-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      # Der Pfad der Tools unterscheidet sich je nach Image-Version,
+      # darum beide Varianten versuchen.
+      test:
+        - CMD-SHELL
+        - >
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1"
+          || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+    image: polysport-app:local
+    container_name: polysport-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Damit die App hinter einem Reverse Proxy das richtige Schema
+      # und die echte Client-IP sieht (nginx setzt X-Forwarded-*).
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: >-
+        Server=db,1433;Database=${DB_NAME:-PolySport};User Id=sa;Password=${MSSQL_SA_PASSWORD};
+        TrustServerCertificate=True;MultipleActiveResultSets=true
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@admin.com}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?ADMIN_PASSWORD fehlt in .env}
+    ports:
+      # Nur auf der gewünschten Adresse veröffentlichen; hinter einem
+      # Reverse Proxy kann das 127.0.0.1 sein.
+      - "${BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  db-data:

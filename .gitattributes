@@ -1,0 +1,19 @@
+# Zeilenenden automatisch normalisieren
+* text=auto
+
+# Diese Dateien werden auf Linux ausgeführt und brauchen zwingend LF.
+# Mit CRLF scheitert bash mit Meldungen wie "\r: command not found".
+*.sh text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+docker-compose.yml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binärdateien nicht anfassen
+*.png binary
+*.ico binary
+*.jpg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
