@@ -23,20 +23,29 @@ ASP.NET Core 8 (MVC) mit Identity und SQL Server.
 
 ## Installation auf einem LXC oder Server
 
-Ein Befehl, der Rest läuft geführt ab:
+Vier kurze Zeilen, danach läuft alles geführt ab:
 
 ```bash
-apt-get update && apt-get install -y curl && \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/SimoTekk/PolySport/master/deploy/install.sh)"
+apt update
+apt install -y git
+git clone https://github.com/SimoTekk/PolySport /opt/polysport
+bash /opt/polysport/deploy/install.sh
 ```
 
-Der Teil vor dem Skript installiert `curl` – minimale Debian-Vorlagen bringen
-es nicht mit, und ohne curl lässt sich das Skript nicht herunterladen. Ist curl
-schon vorhanden, genügt der kurze Aufruf:
+Diese Variante ist die verlässlichste: kurze Zeilen ohne Anführungszeichen,
+die beim Kopieren in ein Terminal nicht kaputtgehen. Minimale Debian-Vorlagen
+bringen weder `git` noch `curl` mit – die zweite Zeile deckt das ab, alles
+Weitere installiert das Skript selbst.
+
+Wer es in einem Aufruf mag und `curl` schon hat:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SimoTekk/PolySport/master/deploy/install.sh)"
 ```
+
+> Achtung beim Kopieren aus einer Anleitung: Zeilen mit `$(...)` dürfen nicht
+> umbrechen. Bricht die Adresse mitten im Namen um, schlägt der Aufruf fehl.
+> Im Zweifel die Variante mit den vier Zeilen nehmen.
 
 Das Skript
 1. prüft System, Architektur und Arbeitsspeicher,

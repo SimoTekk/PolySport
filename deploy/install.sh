@@ -138,10 +138,16 @@ fi
 step "Quellcode"
 
 if [[ -d "$INSTALL_DIR/.git" ]]; then
-    warn "In $INSTALL_DIR ist bereits eine Installation vorhanden."
-    info "Für eine Aktualisierung: bash $INSTALL_DIR/deploy/update.sh"
-    confirm "Vorhandene Installation weiterverwenden und neu einrichten?" "j" \
-        || die "Abgebrochen."
+    if [[ -f "$INSTALL_DIR/.env" ]]; then
+        # Schon einmal eingerichtet – hier ist Vorsicht angebracht.
+        warn "In $INSTALL_DIR ist bereits eine Installation vorhanden."
+        info "Für eine Aktualisierung: bash $INSTALL_DIR/deploy/update.sh"
+        confirm "Vorhandene Installation weiterverwenden und neu einrichten?" "j" \
+            || die "Abgebrochen."
+    else
+        # Der Quellcode wurde von Hand geklont, aber noch nichts eingerichtet.
+        ok "Quellcode liegt bereits in $INSTALL_DIR"
+    fi
     git -C "$INSTALL_DIR" fetch --all --tags --prune
 else
     mkdir -p "$(dirname "$INSTALL_DIR")"
