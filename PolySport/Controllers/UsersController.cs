@@ -131,6 +131,61 @@ namespace PolySport.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Users/SetAdmin/{id} – Admin-Rechte vergeben oder entziehen
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetAdmin(string id, bool isAdmin)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
+
+            if (isAdmin)
+            {
+                if (!user.IsApproved)
+                {
+                    TempData["Error"] = "Bitte das Konto zuerst freigeben.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var result = await _userManager.AddToRoleAsync(user, AppRoles.Admin);
+                if (!result.Succeeded)
+                {
+                    TempData["Error"] = "Admin-Rechte konnten nicht vergeben werden: "
+                        + string.Join(", ", result.Errors.Select(e => e.Description));
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Manager wird überflüssig, ein Admin darf ohnehin mehr
+                if (await _userManager.IsInRoleAsync(user, AppRoles.Manager))
+                    await _userManager.RemoveFromRoleAsync(user, AppRoles.Manager);
+
+                await _userManager.UpdateSecurityStampAsync(user);
+                TempData["Success"] = $"{user.Email} ist jetzt Admin.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // --- Entziehen: zwei Sicherungen gegen das Aussperren ---
+            if (id == _userManager.GetUserId(User))
+            {
+                TempData["Error"] = "Du kannst dir die eigenen Admin-Rechte nicht entziehen. "
+                    + "Lass das eine andere Person mit Admin-Rechten machen.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var admins = await _userManager.GetUsersInRoleAsync(AppRoles.Admin);
+            if (admins.Count <= 1)
+            {
+                TempData["Error"] = "Das ist der letzte Admin – sonst könnte niemand mehr verwalten.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _userManager.RemoveFromRoleAsync(user, AppRoles.Admin);
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            TempData["Success"] = $"{user.Email} hat keine Admin-Rechte mehr.";
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST: Users/Delete/{id} – lehnt eine Registrierung endgültig ab
         [HttpPost]
         [ValidateAntiForgeryToken]

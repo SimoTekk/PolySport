@@ -1,11 +1,9 @@
-@model PolySport.Services.UpdateInfo
+@model PolySport.Models.ViewModels.UpdatePageViewModel
 @using PolySport.Services
 @{
     ViewData["Title"] = "Aktualisierung";
-    var canInstall = (bool)(ViewBag.CanInstall ?? false);
-    var status = ViewBag.Status as UpdateStatus ?? new UpdateStatus();
-    var repositoryUrl = ViewBag.RepositoryUrl as string ?? "";
-    var updateRunning = status.State == UpdateState.Requested || status.State == UpdateState.Running;
+    var info = Model.Info;
+    var status = Model.Status;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
@@ -27,19 +25,19 @@
         <div class="card h-100">
             <div class="card-body">
                 <h6 class="text-muted text-uppercase small mb-2">Installiert</h6>
-                <p class="display-6 mb-0">@Model.CurrentVersion</p>
+                <p class="display-6 mb-0">@info.CurrentVersion</p>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card h-100 @(Model.IsUpdateAvailable ? "border-primary" : "")">
+        <div class="card h-100 @(info.IsUpdateAvailable ? "border-primary" : "")">
             <div class="card-body">
                 <h6 class="text-muted text-uppercase small mb-2">Verfügbar</h6>
-                <p class="display-6 mb-0">@(Model.LatestVersion ?? "–")</p>
-                @if (Model.CheckedAt.HasValue)
+                <p class="display-6 mb-0">@(info.LatestVersion ?? "–")</p>
+                @if (info.CheckedAt.HasValue)
                 {
                     <p class="text-muted small mb-0 mt-2">
-                        geprüft am @Model.CheckedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        geprüft am @info.CheckedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
                     </p>
                 }
             </div>
@@ -47,21 +45,78 @@
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(Model.Error))
+@if (!string.IsNullOrEmpty(info.Error))
 {
     <div class="alert alert-warning mt-3">
-        Die Versionsprüfung war nicht möglich: @Model.Error.
-        @if (!string.IsNullOrEmpty(repositoryUrl))
+        Die Versionsprüfung war nicht möglich: @info.Error.
+        @if (!string.IsNullOrEmpty(Model.RepositoryUrl))
         {
             <span>
-                Ist das Repository <a href="@repositoryUrl" target="_blank" rel="noopener">@repositoryUrl</a>
+                Ist das Repository <a href="@Model.RepositoryUrl" target="_blank" rel="noopener">@Model.RepositoryUrl</a>
                 öffentlich erreichbar?
             </span>
         }
     </div>
 }
 
-@if (updateRunning)
+@* Änderungen zwischen installierter und neuester Version *@
+@if (info.IsUpdateAvailable && Model.PendingChanges.Any())
+{
+    <div class="card mt-4">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>Was sich ändert</span>
+            <span class="text-muted small">
+                @if (Model.VersionsBehind == 1)
+                {
+                    <span>eine neue Version</span>
+                }
+                else
+                {
+                    <span>@Model.VersionsBehind neue Versionen seit @info.CurrentVersion</span>
+                }
+            </span>
+        </div>
+        <div class="card-body">
+            @foreach (var entry in Model.PendingChanges)
+            {
+                <div class="mb-4">
+                    <h5 class="mb-1">
+                        @entry.Version
+                        @if (!string.IsNullOrEmpty(entry.Date))
+                        {
+                            <span class="text-muted fs-6 fw-normal">– @entry.Date</span>
+                        }
+                    </h5>
+                    @if (entry.Items.Any())
+                    {
+                        <ul class="mb-0">
+                            @foreach (var item in entry.Items)
+                            {
+                                <li>@item</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Keine Einzelheiten hinterlegt.</p>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (info.IsUpdateAvailable)
+{
+    <p class="text-muted mt-4">
+        Zu dieser Version ist keine Änderungsliste hinterlegt.
+        @if (!string.IsNullOrEmpty(Model.RepositoryUrl))
+        {
+            <a href="@Model.RepositoryUrl/blob/master/CHANGELOG.md" target="_blank" rel="noopener">Änderungen auf GitHub ansehen</a>
+        }
+    </p>
+}
+
+@if (Model.IsUpdateRunning)
 {
     <div class="card mt-4" id="updateProgress" data-poll-url="@Url.Action("Status")">
         <div class="card-body">
@@ -145,14 +200,14 @@ else if (status.State == UpdateState.Failed)
 }
 
 <div class="mt-4">
-    @if (Model.IsUpdateAvailable && !updateRunning)
+    @if (info.IsUpdateAvailable && !Model.IsUpdateRunning)
     {
-        @if (canInstall)
+        @if (Model.CanInstall)
         {
             <form asp-action="Install" method="post"
-                  onsubmit="return confirm('Update auf @Model.LatestVersion jetzt installieren? Die Datenbank wird vorher gesichert, die Seite ist kurz nicht erreichbar.');">
+                  onsubmit="return confirm('Update auf @info.LatestVersion jetzt installieren? Die Datenbank wird vorher gesichert, die Seite ist kurz nicht erreichbar.');">
                 <button type="submit" class="btn btn-primary btn-lg">
-                    Update auf @Model.LatestVersion installieren
+                    Update auf @info.LatestVersion installieren
                 </button>
             </form>
             <p class="text-muted small mt-2 mb-0">
@@ -163,7 +218,7 @@ else if (status.State == UpdateState.Failed)
         else
         {
             <div class="alert alert-info">
-                <strong>Neue Version verfügbar: @Model.LatestVersion</strong>
+                <strong>Neue Version verfügbar: @info.LatestVersion</strong>
                 <p class="mb-2 mt-2">
                     Diese Installation kann sich nicht selbst aktualisieren – das
                     geht nur bei der Einrichtung über <code>deploy/install.sh</code>.
@@ -173,15 +228,16 @@ else if (status.State == UpdateState.Failed)
             </div>
         }
     }
-    else if (!Model.IsUpdateAvailable && string.IsNullOrEmpty(Model.Error) && !updateRunning)
+    else if (!info.IsUpdateAvailable && string.IsNullOrEmpty(info.Error) && !Model.IsUpdateRunning)
     {
         <div class="alert alert-success mb-0">Die Anwendung ist auf dem neuesten Stand.</div>
     }
 </div>
 
-@if (!string.IsNullOrEmpty(repositoryUrl))
+@if (!string.IsNullOrEmpty(Model.RepositoryUrl))
 {
     <p class="text-muted small mt-4">
-        Quelle: <a href="@repositoryUrl" target="_blank" rel="noopener">@repositoryUrl</a>
+        Quelle: <a href="@Model.RepositoryUrl" target="_blank" rel="noopener">@Model.RepositoryUrl</a>
+        &middot; <a href="@Model.RepositoryUrl/blob/master/CHANGELOG.md" target="_blank" rel="noopener">alle Änderungen</a>
     </p>
 }

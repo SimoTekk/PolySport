@@ -13,6 +13,18 @@ namespace PolySport.Services
         public string? Error { get; init; }
     }
 
+    /// <summary>Ein Abschnitt aus CHANGELOG.md.</summary>
+    public class ChangelogEntry
+    {
+        /// <summary>Wie in der Datei geschrieben, z.B. "v1.3.0".</summary>
+        public string Version { get; init; } = string.Empty;
+
+        /// <summary>Freitext hinter der Version, z.B. "24.08.2026".</summary>
+        public string? Date { get; init; }
+
+        public List<string> Items { get; init; } = new List<string>();
+    }
+
     /// <summary>Zustand eines laufenden oder abgeschlossenen Updates.</summary>
     public class UpdateStatus
     {

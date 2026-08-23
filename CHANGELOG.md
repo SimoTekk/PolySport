@@ -1,0 +1,79 @@
+# Änderungen
+
+Diese Datei wird von der Anwendung gelesen: auf der Update-Seite erscheinen
+alle Einträge zwischen der installierten und der neuesten Version.
+
+Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
+darunter Punkte mit `-`.
+
+## v1.3.1 – 24.08.2026
+
+- Admin-Rechte lassen sich in der Benutzerverwaltung vergeben und entziehen
+- Die Update-Seite zeigt, was sich seit der installierten Version geändert hat – bei mehreren Versionen alle Einträge dazwischen
+- Sicherung gegen Aussperren: die eigenen Admin-Rechte und die des letzten Admins lassen sich nicht entziehen
+
+## v1.3.0 – 24.08.2026
+
+- Neue Rolle **Manager**: darf Spiele leiten, also Spieluhr bedienen, Tore und Gegentore erfassen, Fehleingaben löschen sowie Matches beenden und wieder öffnen
+- Manager dürfen bewusst keine Matches anlegen, keine Saisons oder Spieler verwalten und keine Benutzer freigeben
+- Benutzerverwaltung zeigt die Rolle jeder Person und erlaubt das Vergeben und Entziehen
+- Rollenänderungen greifen sofort, ohne neue Anmeldung
+
+## v1.2.4 – 24.08.2026
+
+- Ein nicht erreichbarer Port lässt ein Update nicht mehr als fehlgeschlagen erscheinen. Entscheidend ist, ob die Anwendung läuft
+- Wartezeit nach dem Update von fünf auf zwei Minuten gekürzt
+- Hinweise des Update-Skripts erscheinen jetzt auch im Erfolgsfall in der Oberfläche
+
+## v1.2.3 – 24.08.2026
+
+- Das Setup fragt die Erreichbarkeit als Auswahl statt als freie Adresse. Die Frage nach einer „Adresse" verleitete dazu, die IP des Containers einzutippen
+
+## v1.2.2 – 24.08.2026
+
+- Die Prüfung nach Installation und Update beachtet die Adresse, an die der Port gebunden ist. Vorher wurde immer 127.0.0.1 gefragt und ein Fehler gemeldet, obwohl alles lief
+- Fehlermeldungen nennen die Ursache statt der letzten Zeilen einer Containerliste
+
+## v1.2.1 – 24.08.2026
+
+- Hängengebliebene Update-Meldungen werden nach 30 Minuten erkannt
+- Neuer Knopf, um eine hängende oder fehlgeschlagene Meldung zurückzusetzen
+
+## v1.2.0 – 24.08.2026
+
+- Die installierte Version steht im Footer. Für Admins führt sie direkt zur Update-Seite
+- Neues Favicon mit Eishockeyschläger und Puck
+- Die Update-Seite prüft beim Öffnen immer frisch statt den zwischengespeicherten Stand zu zeigen
+- Das Installationsskript nennt am Ende die tatsächlich erreichbare Adresse
+
+## v1.1.3 – 24.08.2026
+
+- Installation über `git clone` als empfohlener Weg. Kurze Zeilen ohne Anführungszeichen gehen beim Kopieren in ein Terminal nicht kaputt
+
+## v1.1.2 – 24.08.2026
+
+- Das Installationsskript stellt `curl` und `git` sicher, bevor sie gebraucht werden. Minimale Debian-Vorlagen bringen beides nicht mit
+
+## v1.1.1 – 23.08.2026
+
+- Kein Update-Hinweis mehr, wenn die installierte Version unbekannt ist
+
+## v1.1.0 – 23.08.2026
+
+- Die Anwendung prüft im Hintergrund, ob auf GitHub eine neuere Version vorliegt, und zeigt Admins einen Hinweis
+- Updates lassen sich mit einem Klick aus der Weboberfläche installieren. Die Datenbank wird vorher gesichert
+- Der Anwendungscontainer braucht dafür keinen Zugriff auf Docker: ein Dienst auf dem Host führt das Update aus
+
+## v1.0.0 – 23.08.2026
+
+- Erste vollständige Version
+- Zugriffsschutz auf allen Bereichen. Neue Registrierungen müssen von einem Admin freigegeben werden
+- Spieluhr auf dem Server: Drittel starten und beenden, Tore bekommen ihre Spielzeit automatisch
+- Gegentore werden einzeln mit Zeit erfasst, der Spielstand ergibt sich aus den Toren
+- Torfolge mit Zwischenstand, Tore einzeln löschbar
+- Saisons anlegen, bearbeiten, aktiv setzen und löschen
+- Spieler anlegen und aktiv oder inaktiv schalten
+- Dashboard mit Bilanz, Torverhältnis, offenem Match und Top-Scorern
+- Saisonblatt mit Toren und Assists pro Spieler und Match, druckbar im Querformat
+- Auswertung der Torzeiten nach Drittel
+- Geführte Installation und Aktualisierung per Docker Compose

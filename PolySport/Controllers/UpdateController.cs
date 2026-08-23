@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PolySport.Models;
+using PolySport.Models.ViewModels;
 using PolySport.Services;
 
 namespace PolySport.Controllers
@@ -23,11 +24,14 @@ namespace PolySport.Controllers
             // Stand sehen und nicht das Ergebnis der letzten Hintergrundprüfung.
             var info = await _updateService.CheckAsync();
 
-            ViewBag.CanInstall = _updateService.CanInstallUpdates;
-            ViewBag.Status = _updateService.GetStatus();
-            ViewBag.RepositoryUrl = _updateService.RepositoryUrl;
-
-            return View(info);
+            return View(new UpdatePageViewModel
+            {
+                Info = info,
+                Status = _updateService.GetStatus(),
+                PendingChanges = await _updateService.GetPendingChangesAsync(),
+                CanInstall = _updateService.CanInstallUpdates,
+                RepositoryUrl = _updateService.RepositoryUrl
+            });
         }
 
         // POST: Update/Install

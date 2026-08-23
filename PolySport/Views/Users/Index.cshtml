@@ -27,7 +27,8 @@
     <strong>Mitglied</strong> sieht Matches und Statistiken, ändert aber nichts.
     <strong>Manager</strong> leitet Spiele: Spieluhr bedienen, Tore erfassen und
     korrigieren, Match beenden – aber keine Matches anlegen und nichts verwalten.
-    <strong>Admin</strong> darf alles.
+    <strong>Admin</strong> darf alles, auch Benutzer verwalten und Updates einspielen.
+    Die eigenen Admin-Rechte und die des letzten Admins lassen sich nicht entziehen.
 </p>
 
 <h4 class="mt-4">Offene Registrierungen</h4>
@@ -113,7 +114,18 @@ else
                     </td>
                     <td>@(user.ApprovedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
                     <td class="text-end">
-                        @if (!user.IsAdmin)
+                        @if (user.IsAdmin)
+                        {
+                            @if (!user.IsCurrentUser)
+                            {
+                                <form asp-action="SetAdmin" asp-route-id="@user.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('@user.Email die Admin-Rechte entziehen?');">
+                                    <input type="hidden" name="isAdmin" value="false" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Admin entziehen</button>
+                                </form>
+                            }
+                        }
+                        else
                         {
                             @if (user.IsManager)
                             {
@@ -129,6 +141,11 @@ else
                                     <button type="submit" class="btn btn-sm btn-outline-info">Zum Manager machen</button>
                                 </form>
                             }
+                            <form asp-action="SetAdmin" asp-route-id="@user.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('@user.Email zum Admin machen? Damit darf diese Person alles, auch Benutzer verwalten.');">
+                                <input type="hidden" name="isAdmin" value="true" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Zum Admin machen</button>
+                            </form>
                         }
                         @if (!user.IsCurrentUser)
                         {

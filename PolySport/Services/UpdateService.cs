@@ -27,6 +27,12 @@ namespace PolySport.Services
         /// <summary>Löscht eine hängengebliebene Statusmeldung.</summary>
         bool ClearStatus();
 
+        /// <summary>
+        /// Änderungen zwischen der installierten und der neuesten Version,
+        /// neueste zuerst. Leer, wenn die Datei nicht gelesen werden kann.
+        /// </summary>
+        Task<List<ChangelogEntry>> GetPendingChangesAsync(CancellationToken cancellationToken = default);
+
         string RepositoryUrl { get; }
     }
 
@@ -46,6 +52,10 @@ namespace PolySport.Services
         private readonly string _currentVersion;
 
         private UpdateInfo _cached;
+
+        private static readonly TimeSpan ChangelogCacheDuration = TimeSpan.FromMinutes(10);
+        private List<ChangelogEntry>? _changelog;
+        private DateTime _changelogLoadedAt;
 
         public UpdateService(
             IHttpClientFactory httpClientFactory,
@@ -243,6 +253,116 @@ namespace PolySport.Services
             {
                 return new UpdateStatus();
             }
+        }
+
+        public async Task<List<ChangelogEntry>> GetPendingChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var info = _cached.CheckedAt.HasValue ? _cached : await CheckAsync(cancellationToken);
+            if (string.IsNullOrEmpty(info.LatestVersion)) return new List<ChangelogEntry>();
+
+            var all = await LoadChangelogAsync(cancellationToken);
+            if (all.Count == 0) return all;
+
+            var current = ParseVersion(info.CurrentVersion);
+            var latest = ParseVersion(info.LatestVersion);
+
+            // Ist die installierte Version unbekannt, lässt sich keine Spanne
+            // bilden – dann nur der Eintrag zur neuesten Version.
+            if (current == null)
+            {
+                return all.Where(e => ParseVersion(e.Version) == latest).ToList();
+            }
+
+            return all
+                .Where(e =>
+                {
+                    var version = ParseVersion(e.Version);
+                    return version != null
+                        && version > current
+                        && (latest == null || version <= latest);
+                })
+                .ToList();
+        }
+
+        /// <summary>Holt CHANGELOG.md und zerlegt sie, mit kurzem Zwischenspeicher.</summary>
+        private async Task<List<ChangelogEntry>> LoadChangelogAsync(CancellationToken cancellationToken)
+        {
+            if (_changelog != null && DateTime.UtcNow - _changelogLoadedAt < ChangelogCacheDuration)
+                return _changelog;
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("PolySport", "1.0"));
+
+                var url = $"https://raw.githubusercontent.com/{_repository}/master/CHANGELOG.md";
+                var markdown = await client.GetStringAsync(url, cancellationToken);
+
+                _changelog = ParseChangelog(markdown);
+                _changelogLoadedAt = DateTime.UtcNow;
+                return _changelog;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Änderungsliste konnte nicht geladen werden: {Message}", ex.Message);
+                return new List<ChangelogEntry>();
+            }
+        }
+
+        /// <summary>
+        /// Erwartet Abschnitte "## v1.2.3 – Datum" mit Punkten, die mit "-"
+        /// beginnen. Alles andere wird übersprungen.
+        /// </summary>
+        internal static List<ChangelogEntry> ParseChangelog(string markdown)
+        {
+            var entries = new List<ChangelogEntry>();
+            ChangelogEntry? current = null;
+            var items = new List<string>();
+
+            void Flush()
+            {
+                if (current == null) return;
+                entries.Add(new ChangelogEntry
+                {
+                    Version = current.Version,
+                    Date = current.Date,
+                    Items = new List<string>(items)
+                });
+                items.Clear();
+            }
+
+            foreach (var raw in markdown.Replace("\r\n", "\n").Split('\n'))
+            {
+                var line = raw.TrimEnd();
+
+                var heading = Regex.Match(line, @"^##\s+(v?\d+(?:\.\d+)*)\s*(?:[–\-—:]\s*(.*))?$");
+                if (heading.Success)
+                {
+                    Flush();
+                    current = new ChangelogEntry
+                    {
+                        Version = heading.Groups[1].Value.Trim(),
+                        Date = string.IsNullOrWhiteSpace(heading.Groups[2].Value)
+                            ? null
+                            : heading.Groups[2].Value.Trim()
+                    };
+                    continue;
+                }
+
+                if (current == null) continue;
+
+                var item = Regex.Match(line, @"^\s*[-*]\s+(.+)$");
+                if (item.Success)
+                {
+                    // Fettschrift aus Markdown entfernen, die Anzeige ist reiner Text
+                    var text = item.Groups[1].Value.Replace("**", "").Trim();
+                    if (text.Length > 0) items.Add(text);
+                }
+            }
+
+            Flush();
+            return entries;
         }
 
         public bool ClearStatus()
