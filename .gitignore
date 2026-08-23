@@ -36,7 +36,14 @@ ScaffoldingReadMe.txt
 
 ## Environment
 *.env
+.env
+.env.backup.*
+!.env.example
 appsettings.Local.json
+appsettings.Production.json
+
+## Deployment (entsteht auf dem Server)
+backups/
 
 ## OS
 Thumbs.db

@@ -1,24 +1,27 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+    var pendingApprovals = isAdmin
+        ? await UserManager.Users.CountAsync(u => !u.IsApproved)
+        : 0;
+}
+<!DOCTYPE html>
 <html lang="de" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PolySport</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @* Fremd-Stylesheets (z.B. Select2) gehören hierhin: vor site.css, damit
+       unsere Anpassungen sie überschreiben können und nicht umgekehrt. *@
+    @await RenderSectionAsync("VendorStyles", required: false)
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/PolySport.styles.css" asp-append-version="true" />
-    <script>
-        (function () {
-            var theme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', theme);
-            var bg = localStorage.getItem('bgColor');
-            var txt = localStorage.getItem('textColor');
-            var accent = localStorage.getItem('accentColor');
-            if (bg) document.documentElement.style.setProperty('--ps-bg', bg);
-            if (txt) document.documentElement.style.setProperty('--ps-text', txt);
-            if (accent) document.documentElement.style.setProperty('--ps-accent', accent);
-        })();
-    </script>
+    @* Blockierend im head, damit der gespeicherte Modus vor dem ersten Rendern steht *@
+    <script src="~/js/theme-init.js" asp-append-version="true"></script>
 </head>
 <body>
     <header>
@@ -33,40 +36,40 @@
 
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🏠 Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link fw-bold text-primary" asp-area="" asp-controller="Matches" asp-action="Index">🏒 Matches</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Statistics" asp-action="Season">🏆 Top-Scorer</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Seasons" asp-action="Index">📅 Saisons</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Players" asp-action="Index">👥 Spieler</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @if (isAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link fw-bold text-primary" asp-area="" asp-controller="Matches" asp-action="Index">Matches</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Statistics" asp-action="Season">Top-Scorer</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Statistics" asp-action="Sheet">Saisonblatt</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Seasons" asp-action="Index">Saisons</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Players" asp-action="Index">Spieler</a>
+                            </li>
+                        }
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Users" asp-action="Index">
+                                    Benutzer
+                                    @if (pendingApprovals > 0)
+                                    {
+                                        <span class="badge bg-danger rounded-pill">@pendingApprovals</span>
+                                    }
+                                </a>
+                            </li>
+                        }
                     </ul>
                     <div class="d-flex align-items-center">
-                        <div class="dropdown me-3">
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Farbpalette">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2" /><circle cx="17.5" cy="10.5" r="2" /><circle cx="8.5" cy="7.5" r="2" /><circle cx="6.5" cy="12" r="2" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-5.5-4.5-9.9-10-9.9z" /></svg>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end p-3 color-palette" style="min-width: 240px;">
-                                <h6 class="dropdown-header px-0">Hintergrundfarbe</h6>
-                                <div class="d-flex flex-wrap gap-2 mb-3" id="bgColors"></div>
-                                <h6 class="dropdown-header px-0">Textfarbe</h6>
-                                <div class="d-flex flex-wrap gap-2 mb-3" id="textColors"></div>
-                                <h6 class="dropdown-header px-0">Akzentfarbe</h6>
-                                <div class="d-flex flex-wrap gap-2 mb-2" id="accentColors"></div>
-                                <hr />
-                                <button class="btn btn-sm btn-outline-secondary w-100" id="resetColors">Zurücksetzen</button>
-                            </div>
-                        </div>
                         <div class="theme-switch me-3" id="themeSwitch" title="Dark/Light Mode umschalten">
                             <div class="theme-switch__track">
                                 <svg class="theme-switch__icon theme-switch__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
@@ -88,7 +91,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - PolySport - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2026 - PolySport
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

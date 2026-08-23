@@ -1,0 +1,130 @@
+@model PolySport.Models.ViewModels.SeasonSheetViewModel
+@{
+    ViewData["Title"] = "Saisonblatt";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3 mt-3">
+    <div>
+        <h2 class="mb-0">Saisonblatt</h2>
+        <span class="text-muted">Saison @Model.SeasonName – Tore und Assists pro Spieler und Match</span>
+    </div>
+
+    <div class="d-flex align-items-end gap-2 no-print">
+        <form asp-action="Sheet" method="get" class="d-flex align-items-end gap-2">
+            <div>
+                <label for="seasonSelect" class="form-label mb-1 small text-muted">Saison</label>
+                <select id="seasonSelect" name="id" class="form-select form-select-sm">
+                    @foreach (var season in Model.AvailableSeasons)
+                    {
+                        <option value="@season.Id" selected="@(season.Id == Model.SeasonId)">
+                            @season.Name@(season.IsActive ? " (aktiv)" : "")
+                        </option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Anzeigen</button>
+        </form>
+        <button type="button" id="printSheet" class="btn btn-sm btn-outline-primary">Drucken</button>
+        <a asp-action="Season" asp-route-id="@Model.SeasonId" class="btn btn-sm btn-outline-primary">Top-Scorer</a>
+    </div>
+</div>
+
+@if (!Model.Matches.Any())
+{
+    <div class="alert alert-info">In dieser Saison sind noch keine Matches erfasst.</div>
+}
+else
+{
+    <p class="text-muted">
+        <strong>T</strong> = Tore, <strong>A</strong> = Assists. Eine leere Zelle bedeutet,
+        dass der Spieler in diesem Match nicht im Kader stand – eine 0 bedeutet, er war dabei
+        und hat nicht gepunktet.
+    </p>
+
+    <div class="table-responsive season-sheet">
+        <table class="table table-bordered table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="sheet-player-col" rowspan="2">Spieler</th>
+                    @foreach (var match in Model.Matches)
+                    {
+                        <th colspan="2" class="text-center text-nowrap">
+                            <a asp-controller="Matches" asp-action="Details" asp-route-id="@match.MatchId"
+                               class="text-decoration-none">@match.DateLabel</a>
+                            <div class="fw-normal small text-muted">@match.OpponentName</div>
+                            <div class="fw-normal small">
+                                @match.ScoreLabel
+                                @if (!match.IsFinished)
+                                {
+                                    <span class="badge bg-primary ms-1">offen</span>
+                                }
+                            </div>
+                        </th>
+                    }
+                    <th colspan="3" class="text-center sheet-total-col">Total</th>
+                </tr>
+                <tr>
+                    @foreach (var match in Model.Matches)
+                    {
+                        <th class="text-center small">T</th>
+                        <th class="text-center small">A</th>
+                    }
+                    <th class="text-center small sheet-total-col">T</th>
+                    <th class="text-center small sheet-total-col">A</th>
+                    <th class="text-center small sheet-total-col">Pkt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var player in Model.Players)
+                {
+                    <tr>
+                        <th class="sheet-player-col fw-normal text-nowrap">
+                            @player.PlayerName
+                            @if (!player.IsActive)
+                            {
+                                <span class="badge bg-secondary ms-1">inaktiv</span>
+                            }
+                            <div class="small text-muted">@player.MatchesPlayed Einsätze</div>
+                        </th>
+
+                        @foreach (var cell in player.Cells)
+                        {
+                            if (!cell.WasInRoster)
+                            {
+                                <td class="text-center text-muted sheet-absent" colspan="2">–</td>
+                            }
+                            else
+                            {
+                                <td class="text-center @(cell.Goals > 0 ? "fw-bold" : "text-muted")">@cell.Goals</td>
+                                <td class="text-center @(cell.Assists > 0 ? "fw-bold" : "text-muted")">@cell.Assists</td>
+                            }
+                        }
+
+                        <td class="text-center fw-bold sheet-total-col">@player.TotalGoals</td>
+                        <td class="text-center fw-bold sheet-total-col">@player.TotalAssists</td>
+                        <td class="text-center fw-bold sheet-total-col">@player.TotalPoints</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th class="sheet-player-col">Team</th>
+                    @for (var i = 0; i < Model.Matches.Count; i++)
+                    {
+                        var index = i;
+                        <th class="text-center">@Model.Matches[index].OurScore</th>
+                        <th class="text-center text-muted">@Model.Players.Sum(p => p.Cells[index].Assists)</th>
+                    }
+                    <th class="text-center sheet-total-col">@Model.TeamGoals</th>
+                    <th class="text-center sheet-total-col">@Model.TeamAssists</th>
+                    <th class="text-center sheet-total-col">@(Model.TeamGoals + Model.TeamAssists)</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p class="text-muted mt-3 small">
+        In der Team-Zeile steht bei den Toren der Spielstand des Matches – Tore ohne
+        erfassten Schützen erscheinen darum dort, aber in keiner Spielerzeile.
+    </p>
+}

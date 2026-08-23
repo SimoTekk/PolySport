@@ -1,0 +1,62 @@
+@model PolySport.Models.ViewModels.DeleteSeasonViewModel
+@{
+    ViewData["Title"] = "Saison löschen";
+}
+
+<h2>Saison löschen</h2>
+<hr />
+
+<dl class="row">
+    <dt class="col-sm-3">Saison</dt>
+    <dd class="col-sm-9">@Model.Name</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">
+        @if (Model.IsActive)
+        {
+            <span class="badge bg-success">Aktiv</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">Inaktiv</span>
+        }
+    </dd>
+</dl>
+
+@if (Model.Matches.Any())
+{
+    <div class="alert alert-danger">
+        <h5 class="alert-heading">Achtung: das wird mitgelöscht</h5>
+        <p class="mb-2">
+            Zu dieser Saison gehören <strong>@Model.Matches.Count Match(es)</strong> mit insgesamt
+            <strong>@Model.TotalGoals Tor(en)</strong>. Matches, Tore und Kader-Zuordnungen werden
+            zusammen mit der Saison gelöscht. Das lässt sich nicht rückgängig machen.
+        </p>
+        <ul class="mb-0">
+            @foreach (var match in Model.Matches)
+            {
+                <li>@match.MatchDate.ToString("dd.MM.yyyy") – @match.OpponentName (@match.GoalCount Tore)</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        Zu dieser Saison gehören keine Matches. Löschen ist gefahrlos.
+    </div>
+}
+
+@if (Model.IsActive)
+{
+    <div class="alert alert-info">
+        Das ist die aktuell aktive Saison. Nach dem Löschen ist keine Saison aktiv –
+        dann lassen sich keine neuen Matches anlegen, bis du eine andere aktiv setzt.
+    </div>
+}
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Endgültig löschen</button>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Abbrechen</a>
+</form>

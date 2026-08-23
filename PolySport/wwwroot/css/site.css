@@ -1,5 +1,15 @@
+/* ============================================================
+   Grundlayout
+   ------------------------------------------------------------
+   Farben kommen komplett von Bootstrap 5.3 (data-bs-theme
+   "light" / "dark"). Kein eigenes Farbschema mehr – dadurch
+   sind Dropdowns, Tabellen, Cards und Inputs in beiden Modi
+   automatisch stimmig.
+   ============================================================ */
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,56 +18,291 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
   margin-bottom: 60px;
-  background-color: var(--ps-bg, var(--bs-body-bg));
-  color: var(--ps-text, var(--bs-body-color));
 }
 
-h1, h2, h3, h4, h5, h6,
-p, li, span, label, td, th {
-  color: var(--ps-text, inherit);
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem var(--bs-body-bg), 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.5);
 }
 
-.navbar .nav-link,
-.navbar .navbar-brand {
-  color: var(--ps-text, var(--bs-nav-link-color)) !important;
+/* ============================================================
+   Saisonblatt
+   ------------------------------------------------------------
+   Bei vielen Matches wird die Tabelle breiter als der Bildschirm.
+   Die Spielerspalte bleibt darum beim Scrollen stehen.
+   ============================================================ */
+.season-sheet {
+  max-height: 80vh;
 }
 
-.text-muted {
-  color: var(--ps-text, var(--bs-secondary-color)) !important;
-  opacity: 0.75;
+.season-sheet .sheet-player-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: var(--bs-body-bg);
+  min-width: 11rem;
 }
 
-/* Custom accent color override */
-.btn-primary,
-.bg-primary {
-  background-color: var(--ps-accent, var(--bs-primary)) !important;
-  border-color: var(--ps-accent, var(--bs-primary)) !important;
+.season-sheet thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--bs-body-bg);
 }
 
-a {
-  color: var(--ps-accent, var(--bs-link-color));
+/* Kopfzelle oben links überlagert beides */
+.season-sheet thead .sheet-player-col {
+  z-index: 3;
 }
 
-a:hover {
-  color: var(--ps-accent-hover, var(--bs-link-hover-color));
+.season-sheet .sheet-total-col {
+  background-color: var(--bs-tertiary-bg);
 }
 
-.navbar {
-  background-color: var(--ps-bg, var(--bs-tertiary-bg)) !important;
+.season-sheet .sheet-absent {
+  background-color: var(--bs-tertiary-bg);
 }
 
-/* Theme Switch Slider */
+/* ============================================================
+   Select2 (Such-Dropdowns bei "Match anlegen" und "Tor erfassen")
+   ------------------------------------------------------------
+   Die Bibliothek ersetzt das native <select> durch eigenes Markup
+   mit fest verdrahteten hellen Farben und kennt data-bs-theme
+   nicht. Deshalb hier auf die Bootstrap-Variablen umstellen –
+   damit passt es in Hell und Dunkel automatisch.
+   Wichtig: select2.min.css wird über die Section "VendorStyles"
+   VOR dieser Datei geladen, sonst gewinnt sie.
+   ============================================================ */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  color: var(--bs-body-color);
+}
+
+/* Höhe an .form-control angleichen */
+.select2-container--default .select2-selection--single {
+  height: calc(1.5em + 0.75rem + 2px);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: var(--bs-body-color);
+  line-height: calc(1.5em + 0.75rem);
+  padding-left: 0.75rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: calc(1.5em + 0.75rem);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color: var(--bs-body-color) transparent transparent transparent;
+}
+
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+  border-color: transparent transparent var(--bs-body-color) transparent;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+  color: var(--bs-secondary-color);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__clear,
+.select2-container--default .select2-selection--multiple .select2-selection__clear {
+  color: var(--bs-secondary-color);
+}
+
+/* Mehrfachauswahl: die gewählten Spieler als "Chips" */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: var(--bs-secondary-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover,
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus {
+  background-color: var(--bs-danger);
+  color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-search__field {
+  background-color: transparent;
+  color: var(--bs-body-color);
+}
+
+.select2-container--default .select2-search--inline .select2-search__field::placeholder {
+  color: var(--bs-secondary-color);
+}
+
+/* Aufgeklappte Liste inklusive Suchfeld */
+.select2-dropdown {
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  background-color: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  color: var(--bs-body-color);
+}
+
+.select2-container--default .select2-results__option {
+  color: var(--bs-body-color);
+}
+
+/* Eintrag unter dem Mauszeiger / mit Tastatur angesteuert */
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+
+/* Bereits gewählter Eintrag */
+.select2-container--default .select2-results__option[aria-selected="true"],
+.select2-container--default .select2-results__option--selected {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.select2-container--default .select2-results__message {
+  color: var(--bs-secondary-color);
+}
+
+.select2-container--default.select2-container--disabled .select2-selection--single,
+.select2-container--default.select2-container--disabled .select2-selection--multiple {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+
+/* Fokusrahmen wie bei den übrigen Formularfeldern */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--multiple {
+  border-color: rgba(var(--bs-primary-rgb), 0.6);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* ============================================================
+   Druckausgabe
+   ------------------------------------------------------------
+   Gedacht vor allem für das Saisonblatt: Querformat, ohne
+   Navigation und Knöpfe, immer helle Farben – auch wenn am
+   Bildschirm der Dark Mode aktiv ist.
+   ============================================================ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  /* Farben zurück auf Papier-taugliche Werte, unabhängig vom Theme */
+  html[data-bs-theme] {
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #000000;
+    --bs-body-color-rgb: 0, 0, 0;
+    --bs-emphasis-color: #000000;
+    --bs-emphasis-color-rgb: 0, 0, 0;
+    --bs-heading-color: #000000;
+    --bs-secondary-color: #333333;
+    --bs-tertiary-color: #555555;
+    --bs-secondary-bg: #dddddd;
+    --bs-tertiary-bg: #eeeeee;
+    --bs-border-color: #666666;
+    --bs-border-color-translucent: #666666;
+  }
+
+  body {
+    margin-bottom: 0;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  /* Bedienelemente gehören nicht aufs Papier.
+     Achtung: Bootstrap-Utilities wie .d-flex setzen display selbst mit
+     !important – deshalb braucht es Selektoren mit Klassen-Spezifität. */
+  header,
+  footer,
+  .theme-switch,
+  .btn,
+  form,
+  form.d-flex,
+  .no-print,
+  .no-print.d-flex {
+    display: none !important;
+  }
+
+  /* Volle Blattbreite nutzen, das Blatt wird sonst unnötig schmal */
+  .container,
+  .container-fluid {
+    max-width: none !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Links als normaler Text */
+  a {
+    color: #000000 !important;
+    text-decoration: none !important;
+  }
+
+  /* Badges drucken ohne Farbfläche, sonst wäre weisse Schrift unsichtbar */
+  .badge {
+    color: #000000 !important;
+    background: transparent !important;
+    border: 1px solid #666666;
+    padding: 0 0.25rem;
+  }
+
+  /* Das Blatt darf über mehrere Seiten laufen */
+  .season-sheet {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Sticky-Positionierung bricht im Druck */
+  .season-sheet .sheet-player-col,
+  .season-sheet thead th {
+    position: static !important;
+  }
+
+  .season-sheet table {
+    font-size: 8pt;
+    width: 100%;
+  }
+
+  /* Tabellenkopf auf jeder Seite wiederholen, Zeilen nicht zerreissen */
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  .card {
+    page-break-inside: avoid;
+  }
+
+  /* Grautöne der Total- und Leer-Spalten tatsächlich mitdrucken */
+  .table,
+  .season-sheet .sheet-total-col,
+  .season-sheet .sheet-absent {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ============================================================
+   Theme Switch (Sonne/Mond)
+   ============================================================ */
 .theme-switch {
   cursor: pointer;
   user-select: none;
@@ -108,7 +353,6 @@ a:hover {
   opacity: 0;
 }
 
-/* Dark mode */
 html[data-bs-theme="dark"] .theme-switch__track {
   background-color: #343a8a;
 }
@@ -123,36 +367,4 @@ html[data-bs-theme="dark"] .theme-switch__sun {
 
 html[data-bs-theme="dark"] .theme-switch__moon {
   opacity: 1;
-}
-
-/* Color Palette Picker */
-.color-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
-  position: relative;
-}
-
-.color-swatch:hover {
-  transform: scale(1.15);
-}
-
-.color-swatch.active {
-  border-color: var(--bs-body-color);
-}
-
-.color-swatch.active::after {
-  content: '\2713';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }

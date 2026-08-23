@@ -1,0 +1,19 @@
+@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = "Registrierung eingegangen";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="alert alert-info">
+    <p class="mb-2">
+        Danke für die Registrierung@(string.IsNullOrEmpty(Model.Email) ? "" : $", {Model.Email}")!
+    </p>
+    <p class="mb-0">
+        Dein Konto muss zuerst von einem Administrator freigegeben werden.
+        Sobald das erledigt ist, kannst du dich normal anmelden.
+    </p>
+</div>
+
+<a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary">Zur Anmeldung</a>

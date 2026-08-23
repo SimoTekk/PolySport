@@ -167,6 +167,9 @@ namespace PolySport.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -189,6 +192,9 @@ namespace PolySport.Data.Migrations
 
                     b.Property<string>("FirstName")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
@@ -256,10 +262,19 @@ namespace PolySport.Data.Migrations
                     b.Property<int?>("AssistId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsOpponentGoal")
+                        .HasColumnType("bit");
+
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ScorerId")
+                    b.Property<int?>("Period")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ScorerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SecondsInPeriod")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -281,6 +296,15 @@ namespace PolySport.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CurrentPeriod")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("MatchDate")
                         .HasColumnType("datetime2");
 
@@ -288,8 +312,8 @@ namespace PolySport.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("OpponentScore")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("PeriodStartedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
@@ -432,8 +456,7 @@ namespace PolySport.Data.Migrations
                     b.HasOne("PolySport.Models.User", "Scorer")
                         .WithMany("GoalsScored")
                         .HasForeignKey("ScorerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Assist");
 

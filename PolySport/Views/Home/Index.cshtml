@@ -1,8 +1,181 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model PolySport.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = User.IsInRole(AppRoles.Admin);
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@if (!isAuthenticated)
+{
+    <div class="text-center py-5">
+        <h1 class="display-4">PolySport</h1>
+        <p class="lead">Matches, Tore und Statistiken für unser Team.</p>
+        <p class="text-muted">Melde dich an, um die Spiele und Auswertungen zu sehen.</p>
+        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary btn-lg">Anmelden</a>
+        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-secondary btn-lg ms-2">Registrieren</a>
+    </div>
+}
+else
+{
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <div>
+        <h2 class="mb-0">Dashboard</h2>
+        @if (Model.HasActiveSeason)
+        {
+            <span class="text-muted">Saison @Model.SeasonName</span>
+        }
+    </div>
+    @if (isAdmin && Model.PendingApprovals > 0)
+    {
+        <a asp-controller="Users" asp-action="Index" class="btn btn-outline-danger">
+            @Model.PendingApprovals Registrierung(en) warten auf Freigabe
+        </a>
+    }
 </div>
+
+@if (!Model.HasActiveSeason)
+{
+    <div class="alert alert-warning">
+        Es ist keine Saison aktiv. Setze unter <a asp-controller="Seasons" asp-action="Index">Saisons</a>
+        eine Saison auf aktiv, damit Matches erfasst und ausgewertet werden können.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-2">Bilanz</h6>
+                    <p class="display-6 mb-1">@Model.Wins - @Model.Draws - @Model.Losses</p>
+                    <p class="card-text text-muted mb-0">Siege - Unentschieden - Niederlagen</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-2">Torverhältnis</h6>
+                    <p class="display-6 mb-1">@Model.GoalsFor : @Model.GoalsAgainst</p>
+                    <p class="card-text mb-0">
+                        <span class="badge @(Model.GoalDifference >= 0 ? "bg-success" : "bg-danger")">
+                            @(Model.GoalDifference > 0 ? "+" : "")@Model.GoalDifference
+                        </span>
+                        <span class="text-muted ms-1">Differenz</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-2">Spiele</h6>
+                    <p class="display-6 mb-1">@Model.MatchesFinished / @Model.MatchesTotal</p>
+                    <p class="card-text text-muted mb-0">beendet@(Model.MatchesOpen > 0 ? $", {Model.MatchesOpen} offen" : "")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small mb-2">Kader</h6>
+                    <p class="display-6 mb-1">@Model.ActivePlayers</p>
+                    <p class="card-text text-muted mb-0">aktive Spieler</p>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.OpenMatch != null)
+        {
+            <div class="col-lg-6">
+                <div class="card h-100 border-primary">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Offenes Match</span>
+                        <span class="badge bg-primary">läuft</span>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title mb-1">gegen @Model.OpenMatch.OpponentName</h4>
+                        <p class="text-muted">@Model.OpenMatch.MatchDate.ToString("dd.MM.yyyy HH:mm")</p>
+                        <p class="display-6 mb-3">@Model.OpenMatch.OurScore : @Model.OpenMatch.OpponentScore</p>
+                        <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.OpenMatch.Id"
+                           class="btn btn-primary">Zum Match</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (Model.LastMatch != null)
+        {
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">Letztes Resultat</div>
+                    <div class="card-body">
+                        <h4 class="card-title mb-1">gegen @Model.LastMatch.OpponentName</h4>
+                        <p class="text-muted">@Model.LastMatch.MatchDate.ToString("dd.MM.yyyy")</p>
+                        <p class="display-6 mb-2">@Model.LastMatch.OurScore : @Model.LastMatch.OpponentScore</p>
+                        <p>
+                            @{
+                                var resultClass = Model.LastMatch.ResultLabel == "Sieg" ? "bg-success"
+                                    : Model.LastMatch.ResultLabel == "Niederlage" ? "bg-danger" : "bg-secondary";
+                            }
+                            <span class="badge @resultClass">@Model.LastMatch.ResultLabel</span>
+                        </p>
+                        <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.LastMatch.Id"
+                           class="btn btn-outline-primary">Details</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Top-Scorer</span>
+                    <a asp-controller="Statistics" asp-action="Season" class="small">alle anzeigen</a>
+                </div>
+                @if (Model.TopScorers.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @{ var rank = 1; }
+                        @foreach (var scorer in Model.TopScorers)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><strong>@rank.</strong> @scorer.PlayerName</span>
+                                <span>
+                                    <span class="text-muted small me-2">@scorer.Goals T / @scorer.Assists A</span>
+                                    <span class="badge bg-primary rounded-pill">@scorer.TotalPoints</span>
+                                </span>
+                            </li>
+                            rank++;
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="card-body text-muted">Noch keine Tore in dieser Saison erfasst.</div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">Schnellzugriff</div>
+                <div class="card-body d-flex flex-column gap-2">
+                    <a asp-controller="Matches" asp-action="Index" class="btn btn-outline-primary">Match-Historie</a>
+                    <a asp-controller="Statistics" asp-action="Season" class="btn btn-outline-primary">Statistik &amp; Auswertung</a>
+                    <a asp-controller="Statistics" asp-action="Sheet" class="btn btn-outline-primary">Saisonblatt</a>
+                    @if (isAdmin)
+                    {
+                        <a asp-controller="Matches" asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+}

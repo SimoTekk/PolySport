@@ -1,10 +1,12 @@
-﻿@model PolySport.Models.ViewModels.CreateGoalViewModel
+@model PolySport.Models.ViewModels.CreateGoalViewModel
 
 @{
     ViewData["Title"] = "Tor erfassen";
 }
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@section VendorStyles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}
 
 <h2>Tor erfassen gegen @Model.OpponentName</h2>
 <hr />
@@ -13,7 +15,20 @@
     <div class="col-md-6">
         <form asp-action="Create">
             <input type="hidden" asp-for="MatchId" />
+            <input type="hidden" asp-for="LiveClock" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.LiveClock)
+            {
+                @* Zeit kommt von der laufenden Uhr – festgehalten beim Öffnen dieser Seite *@
+                <input type="hidden" asp-for="Period" />
+                <input type="hidden" asp-for="SecondsInPeriod" />
+
+                <div class="alert alert-success d-flex justify-content-between align-items-center">
+                    <span>Zeitpunkt des Tores</span>
+                    <span class="fs-4 font-monospace">@Model.Period. Drittel, @Model.CapturedTimeLabel</span>
+                </div>
+            }
 
             <div class="form-group mb-3">
                 <label asp-for="ScorerId" class="control-label"></label>
@@ -23,13 +38,42 @@
                 <span asp-validation-for="ScorerId" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-4">
+            <div class="form-group mb-3">
                 <label asp-for="AssistId" class="control-label"></label>
                 <select asp-for="AssistId" class="form-control select2-single" asp-items="Model.MatchRoster">
                     <option value="">-- Keiner / Assist suchen --</option>
                 </select>
                 <span asp-validation-for="AssistId" class="text-danger"></span>
             </div>
+
+            @if (!Model.LiveClock)
+            {
+                @* Uhr steht: Zeit von Hand nachtragen *@
+                <div class="alert alert-warning">
+                    Die Spieluhr läuft nicht. Trage Drittel und Minute von Hand nach.
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <label asp-for="Period" class="control-label"></label>
+                        <select asp-for="Period" class="form-select">
+                            <option value="">-- wählen --</option>
+                            <option value="1">1. Drittel</option>
+                            <option value="2">2. Drittel</option>
+                            <option value="3">3. Drittel</option>
+                        </select>
+                        <span asp-validation-for="Period" class="text-danger"></span>
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="MinuteInPeriod" class="control-label"></label>
+                        <div class="input-group">
+                            <input asp-for="MinuteInPeriod" class="form-control" type="number" min="0" max="30" placeholder="z.B. 12" />
+                            <span class="input-group-text">Min.</span>
+                        </div>
+                        <span asp-validation-for="MinuteInPeriod" class="text-danger"></span>
+                    </div>
+                </div>
+            }
 
             <div class="form-group">
                 <input type="submit" value="Tor speichern" class="btn btn-success" />
@@ -44,7 +88,8 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    @* jQuery kommt bereits aus dem Layout – ein zweites Laden würde die
+       vorher registrierte Validierung an eine andere jQuery-Instanz hängen. *@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>

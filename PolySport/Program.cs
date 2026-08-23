@@ -2,46 +2,109 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PolySport.Data;
 using PolySport.Models;
+using PolySport.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    // Wiederholversuche, weil die Datenbank in einer Container-Umgebung
+    // kurzzeitig wegfallen oder noch hochfahren kann.
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Statt E-Mail-Bestätigung entscheidet die Admin-Freigabe, ob sich ein Konto anmelden darf.
+// Muss NACH AddDefaultIdentity registriert werden, damit es die Standard-Implementierung ersetzt.
+builder.Services.AddScoped<IUserConfirmation<ApplicationUser>, AdminApprovalUserConfirmation>();
+
+// Standardmässig prüft Identity das Anmelde-Cookie nur alle 30 Minuten gegen die DB.
+// Damit ein Freigabe-Entzug sofort greift, wird bei jedem Request geprüft.
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.Zero;
+});
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Seed Admin User
+// Datenbank vorbereiten und Admin anlegen
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<ApplicationDbContext>();
 
-    if (!await roleManager.RoleExistsAsync("Admin"))
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
+    // Migrationen selbst anwenden: bei einer frischen Installation existiert
+    // die Datenbank noch nicht, und der SQL-Server-Container braucht nach dem
+    // Start eine Weile. Darum geduldig warten statt sofort abzustürzen.
+    const int maxAttempts = 60;
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Datenbank ist auf dem aktuellen Stand.");
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            logger.LogWarning("Datenbank noch nicht bereit (Versuch {Attempt}/{Max}): {Message}",
+                attempt, maxAttempts, ex.Message);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+    }
 
-    var adminUser = await userManager.FindByEmailAsync("admin@admin.com");
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+    if (!await roleManager.RoleExistsAsync(AppRoles.Admin))
+        await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
+
+    // Zugangsdaten des ersten Admins kommen aus der Konfiguration
+    // (Umgebungsvariablen Seed__AdminEmail / Seed__AdminPassword).
+    var adminEmail = builder.Configuration["Seed:AdminEmail"] ?? "admin@admin.com";
+    var adminPassword = builder.Configuration["Seed:AdminPassword"] ?? "Admin123!";
+
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
         adminUser = new ApplicationUser
         {
-            UserName = "admin@admin.com",
-            Email = "admin@admin.com",
+            UserName = adminEmail,
+            Email = adminEmail,
             EmailConfirmed = true,
             FirstName = "Admin",
             LastName = "Admin",
             DisplayName = "Administrator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            IsApproved = true,
+            ApprovedAt = DateTime.UtcNow
         };
-        await userManager.CreateAsync(adminUser, "Admin123!");
-        await userManager.AddToRoleAsync(adminUser, "Admin");
+
+        var result = await userManager.CreateAsync(adminUser, adminPassword);
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, AppRoles.Admin);
+            logger.LogInformation("Admin-Konto {Email} wurde angelegt.", adminEmail);
+        }
+        else
+        {
+            logger.LogError("Admin-Konto konnte nicht angelegt werden: {Fehler}",
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+    else if (!adminUser.IsApproved)
+    {
+        // Sonst würde sich der Admin nach Einführung der Freigabe selbst aussperren.
+        adminUser.IsApproved = true;
+        adminUser.ApprovedAt = DateTime.UtcNow;
+        await userManager.UpdateAsync(adminUser);
     }
 }
 
@@ -62,6 +125,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

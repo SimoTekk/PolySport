@@ -1,12 +1,16 @@
-﻿@model IEnumerable<PolySport.Models.Match>
+@model IEnumerable<PolySport.Models.Match>
 
 @{
     ViewData["Title"] = "Match Übersicht";
+    var isAdmin = User.IsInRole(AppRoles.Admin);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
     <h2>Match Historie</h2>
-    <a asp-action="Create" class="btn btn-primary">🏒 Neues Match anlegen</a>
+    @if (isAdmin)
+    {
+        <a asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
+    }
 </div>
 
 @if (Model != null && Model.Any())
@@ -18,7 +22,8 @@
                     <th>Datum</th>
                     <th>Saison</th>
                     <th>Gegner</th>
-                    <th>Gegner Tore</th>
+                    <th class="text-center">Resultat</th>
+                    <th>Status</th>
                     <th class="text-end">Aktion</th>
                 </tr>
             </thead>
@@ -29,10 +34,39 @@
                         <td><strong>@item.MatchDate.ToString("dd.MM.yyyy HH:mm")</strong></td>
                         <td>@item.Season?.Name</td>
                         <td>@item.OpponentName</td>
-                        <td>@item.OpponentScore</td>
+                        <td class="text-center fw-bold">@item.OurScore : @item.OpponentScore</td>
+                        <td>
+                            @if (item.IsFinished)
+                            {
+                                @if (item.OurScore > item.OpponentScore)
+                                {
+                                    <span class="badge bg-success">Sieg</span>
+                                }
+                                else if (item.OurScore < item.OpponentScore)
+                                {
+                                    <span class="badge bg-danger">Niederlage</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Unentschieden</span>
+                                }
+                            }
+                            else if (item.IsPeriodRunning)
+                            {
+                                <span class="badge bg-success">@item.CurrentPeriod. Drittel läuft</span>
+                            }
+                            else if (item.HasStarted)
+                            {
+                                <span class="badge bg-secondary">@item.StatusLabel</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-dark">Nicht gestartet</span>
+                            }
+                        </td>
                         <td class="text-end">
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white fw-bold">
-                                🔍 Details / Tore eintragen
+                                Details@(isAdmin && !item.IsFinished ? " / Spiel steuern" : "")
                             </a>
                         </td>
                     </tr>
