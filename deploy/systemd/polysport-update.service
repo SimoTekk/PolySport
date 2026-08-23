@@ -1,0 +1,11 @@
+[Unit]
+Description=Führt ein von der PolySport-Weboberfläche angefordertes Update aus
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/polysport/deploy/updater.sh
+# Das Bauen der Images kann dauern
+TimeoutStartSec=1800
+Environment=POLYSPORT_DIR=/opt/polysport

@@ -1,0 +1,152 @@
+@model PolySport.Services.UpdateInfo
+@using PolySport.Services
+@{
+    ViewData["Title"] = "Aktualisierung";
+    var canInstall = (bool)(ViewBag.CanInstall ?? false);
+    var status = ViewBag.Status as UpdateStatus ?? new UpdateStatus();
+    var repositoryUrl = ViewBag.RepositoryUrl as string ?? "";
+    var updateRunning = status.State == UpdateState.Requested || status.State == UpdateState.Running;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <h2 class="mb-0">Aktualisierung</h2>
+    <a asp-action="Index" asp-route-refresh="true" class="btn btn-sm btn-outline-primary">Erneut prüfen</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Installiert</h6>
+                <p class="display-6 mb-0">@Model.CurrentVersion</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 @(Model.IsUpdateAvailable ? "border-primary" : "")">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Verfügbar</h6>
+                <p class="display-6 mb-0">@(Model.LatestVersion ?? "–")</p>
+                @if (Model.CheckedAt.HasValue)
+                {
+                    <p class="text-muted small mb-0 mt-2">
+                        geprüft am @Model.CheckedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-warning mt-3">
+        Die Versionsprüfung war nicht möglich: @Model.Error.
+        @if (!string.IsNullOrEmpty(repositoryUrl))
+        {
+            <span>
+                Ist das Repository <a href="@repositoryUrl" target="_blank" rel="noopener">@repositoryUrl</a>
+                öffentlich erreichbar?
+            </span>
+        }
+    </div>
+}
+
+@if (updateRunning)
+{
+    <div class="card mt-4" id="updateProgress" data-poll-url="@Url.Action("Status")">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3">
+                <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                <div>
+                    <strong id="updateStateText">Update läuft</strong>
+                    <div class="text-muted small" id="updateMessage">@status.Message</div>
+                </div>
+            </div>
+            <hr />
+            <p class="text-muted small mb-0">
+                Die Anwendung wird neu gebaut und startet dabei neu. Das dauert
+                je nach Server einige Minuten – diese Seite ist kurz nicht
+                erreichbar und meldet sich von selbst zurück.
+            </p>
+        </div>
+    </div>
+}
+else if (status.State == UpdateState.Success)
+{
+    <div class="alert alert-success mt-4">
+        <strong>Letztes Update erfolgreich.</strong>
+        @if (!string.IsNullOrEmpty(status.Version))
+        {
+            <span>Version @status.Version</span>
+        }
+        @if (status.UpdatedAt.HasValue)
+        {
+            <span class="text-muted">(@status.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))</span>
+        }
+    </div>
+}
+else if (status.State == UpdateState.Failed)
+{
+    <div class="alert alert-danger mt-4">
+        <strong>Das letzte Update ist fehlgeschlagen.</strong>
+        <div>@status.Message</div>
+        <hr />
+        <p class="mb-0 small">
+            Die vorherige Version läuft weiter. Protokoll auf dem Server ansehen mit
+            <code>journalctl -u polysport-update</code> beziehungsweise
+            <code>cd /opt/polysport &amp;&amp; docker compose logs</code>.
+        </p>
+    </div>
+}
+
+<div class="mt-4">
+    @if (Model.IsUpdateAvailable && !updateRunning)
+    {
+        @if (canInstall)
+        {
+            <form asp-action="Install" method="post"
+                  onsubmit="return confirm('Update auf @Model.LatestVersion jetzt installieren? Die Datenbank wird vorher gesichert, die Seite ist kurz nicht erreichbar.');">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    Update auf @Model.LatestVersion installieren
+                </button>
+            </form>
+            <p class="text-muted small mt-2 mb-0">
+                Vor dem Update wird die Datenbank gesichert. Schlägt der Bau fehl,
+                läuft die bisherige Version unverändert weiter.
+            </p>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <strong>Neue Version verfügbar: @Model.LatestVersion</strong>
+                <p class="mb-2 mt-2">
+                    Diese Installation kann sich nicht selbst aktualisieren – das
+                    geht nur bei der Einrichtung über <code>deploy/install.sh</code>.
+                    Auf dem Server ausführen:
+                </p>
+                <pre class="mb-0"><code>bash /opt/polysport/deploy/update.sh</code></pre>
+            </div>
+        }
+    }
+    else if (!Model.IsUpdateAvailable && string.IsNullOrEmpty(Model.Error) && !updateRunning)
+    {
+        <div class="alert alert-success mb-0">Die Anwendung ist auf dem neuesten Stand.</div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(repositoryUrl))
+{
+    <p class="text-muted small mt-4">
+        Quelle: <a href="@repositoryUrl" target="_blank" rel="noopener">@repositoryUrl</a>
+    </p>
+}

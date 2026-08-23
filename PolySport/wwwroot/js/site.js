@@ -16,6 +16,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // --- Update-Fortschritt ---
+    // Fragt den Zustand ab, solange das Update läuft. Während des Neustarts
+    // antwortet der Server nicht – das ist erwartet, danach geht es weiter.
+    var progress = document.getElementById('updateProgress');
+    if (progress) {
+        var pollUrl = progress.getAttribute('data-poll-url');
+        var stateText = document.getElementById('updateStateText');
+        var messageText = document.getElementById('updateMessage');
+        var offlineSince = null;
+
+        setInterval(function () {
+            fetch(pollUrl, { cache: 'no-store' })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (data) {
+                    offlineSince = null;
+                    if (!data) return;
+
+                    if (messageText && data.message) messageText.textContent = data.message;
+
+                    if (data.state === 'success' || data.state === 'failed') {
+                        window.location.reload();
+                    } else if (stateText) {
+                        stateText.textContent = data.state === 'requested'
+                            ? 'Update angefordert'
+                            : 'Update läuft';
+                    }
+                })
+                .catch(function () {
+                    // Server nicht erreichbar: läuft gerade neu an
+                    if (offlineSince === null) offlineSince = Date.now();
+                    if (stateText) stateText.textContent = 'Anwendung startet neu';
+                    if (messageText) messageText.textContent = 'Warte auf die Anwendung...';
+                });
+        }, 5000);
+    }
+
     // --- Spieluhr ---
     // Der Server liefert den Stand beim Rendern; hier wird nur weitergezählt.
     // Die Wahrheit bleibt auf dem Server, ein Neuladen synchronisiert wieder.

@@ -1,0 +1,10 @@
+[Unit]
+Description=Wacht darüber, ob die PolySport-Weboberfläche ein Update anfordert
+
+[Path]
+# Wird die Datei angelegt, startet polysport-update.service
+PathExists=/opt/polysport/state/update-request
+Unit=polysport-update.service
+
+[Install]
+WantedBy=multi-user.target

@@ -1,12 +1,19 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using PolySport.Services
 @inject UserManager<ApplicationUser> UserManager
+@inject IUpdateService UpdateService
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var isAdmin = User.IsInRole(AppRoles.Admin);
     var pendingApprovals = isAdmin
         ? await UserManager.Users.CountAsync(u => !u.IsApproved)
         : 0;
+
+    // Nur der zwischengespeicherte Stand – die Prüfung läuft im Hintergrund,
+    // damit der Seitenaufbau nicht auf GitHub warten muss.
+    var updateInfo = isAdmin ? UpdateService.Cached : null;
+    var updateAvailable = updateInfo?.IsUpdateAvailable == true;
 }
 <!DOCTYPE html>
 <html lang="de" data-bs-theme="light">
@@ -67,6 +74,15 @@
                                     }
                                 </a>
                             </li>
+                            @if (updateAvailable)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Update" asp-action="Index">
+                                        Update
+                                        <span class="badge bg-warning text-dark rounded-pill">@updateInfo!.LatestVersion</span>
+                                    </a>
+                                </li>
+                            }
                         }
                     </ul>
                     <div class="d-flex align-items-center">
@@ -84,6 +100,17 @@
         </nav>
     </header>
     <div class="container">
+        @if (updateAvailable && !ViewContext.RouteData.Values["controller"]!.Equals("Update"))
+        {
+            <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 no-print">
+                <span>
+                    Eine neue Version ist verfügbar:
+                    <strong>@updateInfo!.LatestVersion</strong>
+                    (installiert: @updateInfo.CurrentVersion)
+                </span>
+                <a asp-controller="Update" asp-action="Index" class="btn btn-sm btn-primary">Update ansehen</a>
+            </div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>

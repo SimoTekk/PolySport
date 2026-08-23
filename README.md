@@ -62,7 +62,24 @@ pct set <VMID> --features nesting=1,keyctl=1
 
 ## Aktualisieren
 
-Neues Release auf GitHub veröffentlicht? Ein Befehl auf dem Server:
+### Über die Weboberfläche
+
+Die Anwendung prüft im Hintergrund alle sechs Stunden, ob auf GitHub ein
+neueres Versions-Tag vorliegt. Ist das der Fall, sieht ein angemeldeter Admin
+einen Hinweis über jeder Seite und einen Menüpunkt **Update**. Dort genügt ein
+Klick auf *Update installieren*: die Datenbank wird gesichert, der neue Stand
+geholt, neu gebaut und gestartet. Die Seite zeigt den Fortschritt und lädt sich
+nach dem Neustart selbst neu.
+
+Wie das ohne Docker-Rechte im Container funktioniert: die Weboberfläche legt
+lediglich eine Datei unter `state/update-request` ab. Ein systemd-Wächter auf
+dem Host (`polysport-update.path`) sieht sie und führt `deploy/update.sh` aus.
+Der Anwendungscontainer hat **keinen** Zugriff auf den Docker-Socket.
+
+Schlägt der Bau fehl, läuft die bisherige Version unverändert weiter und die
+Seite meldet den Fehler.
+
+### Auf der Kommandozeile
 
 ```bash
 bash /opt/polysport/deploy/update.sh

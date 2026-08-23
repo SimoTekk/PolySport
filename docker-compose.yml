@@ -45,6 +45,15 @@ services:
         TrustServerCertificate=True;MultipleActiveResultSets=true
       Seed__AdminEmail: ${ADMIN_EMAIL:-admin@admin.com}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?ADMIN_PASSWORD fehlt in .env}
+      # Installierte Version für den Vergleich mit GitHub
+      POLYSPORT_VERSION: ${POLYSPORT_VERSION:-}
+      Update__Repository: ${UPDATE_REPOSITORY:-SimoTekk/PolySport}
+      Update__StateDirectory: /app/state
+    volumes:
+      # Über diesen Ordner fordert die Weboberfläche ein Update an; ausgeführt
+      # wird es vom systemd-Dienst auf dem Host. Der Container braucht dadurch
+      # keinen Zugriff auf den Docker-Socket.
+      - ./state:/app/state
     ports:
       # Nur auf der gewünschten Adresse veröffentlichen; hinter einem
       # Reverse Proxy kann das 127.0.0.1 sein.

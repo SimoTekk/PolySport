@@ -194,6 +194,8 @@ APP_PORT=${APP_PORT}
 BIND_ADDRESS=${BIND_ADDRESS}
 DB_NAME=PolySport
 MSSQL_PID=Express
+POLYSPORT_VERSION=${LATEST_TAG:-master}
+UPDATE_REPOSITORY=SimoTekk/PolySport
 EOF
     chmod 600 .env
     ok ".env geschrieben (nur für root lesbar)"
@@ -203,6 +205,29 @@ EOF
             "$BOLD" "$RESET" "$BOLD" "$ADMIN_PASSWORD" "$RESET"
     fi
 fi
+
+# ---------------------------------------------------------------
+step "Update über die Weboberfläche einrichten"
+
+# Über diesen Ordner meldet die Weboberfläche einen Update-Wunsch an.
+# Der Container läuft als unprivilegierter Benutzer, darum darf jeder
+# schreiben – es liegen nur zwei Statusdateien darin.
+mkdir -p "$INSTALL_DIR/state"
+chmod 777 "$INSTALL_DIR/state"
+
+install -m 644 "$INSTALL_DIR/deploy/systemd/polysport-update.service" /etc/systemd/system/
+install -m 644 "$INSTALL_DIR/deploy/systemd/polysport-update.path" /etc/systemd/system/
+
+# Pfade anpassen, falls nicht im Standardordner installiert
+if [[ "$INSTALL_DIR" != "/opt/polysport" ]]; then
+    sed -i "s#/opt/polysport#${INSTALL_DIR}#g" \
+        /etc/systemd/system/polysport-update.service \
+        /etc/systemd/system/polysport-update.path
+fi
+
+systemctl daemon-reload
+systemctl enable --now polysport-update.path >/dev/null 2>&1
+ok "Wächter aktiv – Updates lassen sich in der Weboberfläche auslösen"
 
 # ---------------------------------------------------------------
 step "Bauen und starten"
@@ -242,7 +267,8 @@ printf '  Webseite:   http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP
 printf '  Anmeldung:  %s\n' "$ADMIN_EMAIL"
 printf '  Passwort:   wie beim Setup angegeben\n'
 printf '\n'
-printf '  Aktualisieren:   bash %s/deploy/update.sh\n' "$INSTALL_DIR"
+printf '  Aktualisieren:   in der Weboberfläche unter "Update" (nur Admin)\n'
+printf '                   oder bash %s/deploy/update.sh\n' "$INSTALL_DIR"
 printf '  Sicherung:       bash %s/deploy/backup.sh\n' "$INSTALL_DIR"
 printf '  Protokoll:       cd %s && docker compose logs -f\n' "$INSTALL_DIR"
 printf '  Stoppen:         cd %s && docker compose down\n' "$INSTALL_DIR"

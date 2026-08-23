@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolySport.Data;
 using PolySport.Models;
 using PolySport.Security;
+using PolySport.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,11 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 {
     options.ValidationInterval = TimeSpan.Zero;
 });
+
+// Versionsprüfung gegen GitHub, im Hintergrund und zwischengespeichert
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IUpdateService, UpdateService>();
+builder.Services.AddHostedService<UpdateCheckWorker>();
 
 builder.Services.AddControllersWithViews();
 

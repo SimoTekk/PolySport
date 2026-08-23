@@ -8,6 +8,10 @@
 # Holt die Tags von GitHub, wechselt auf das neueste Release, baut neu
 # und startet die Container. Die Datenbank wird vorher gesichert; die
 # Anwendung wendet fehlende Migrationen beim Start selbst an.
+#
+# Umgebungsvariablen:
+#   POLYSPORT_ASSUME_YES=1   keine Rückfragen (für den Aufruf aus der Weboberfläche)
+#   POLYSPORT_TARGET=v1.2.3  bestimmte Version statt der neuesten
 
 set -euo pipefail
 
@@ -31,17 +35,24 @@ CURRENT="$(git describe --tags --exact-match 2>/dev/null || git rev-parse --shor
 printf '  aktuell installiert: %s\n' "$CURRENT"
 
 git fetch --all --tags --prune --quiet
-LATEST_TAG="$(git tag -l --sort=-v:refname | head -n1 || true)"
 
-if [[ -z "$LATEST_TAG" ]]; then
-    warn "Keine Release-Tags gefunden – es wird auf den Hauptzweig aktualisiert."
-    TARGET="origin/$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+if [[ -n "${POLYSPORT_TARGET:-}" ]]; then
+    TARGET="$POLYSPORT_TARGET"
+    printf '  angefordert:         %s\n' "$TARGET"
+    git rev-parse --verify --quiet "$TARGET" >/dev/null \
+        || die "Version $TARGET ist im Repository nicht vorhanden."
 else
-    printf '  neuestes Release:    %s\n' "$LATEST_TAG"
-    TARGET="$LATEST_TAG"
-    if [[ "$CURRENT" == "$LATEST_TAG" ]]; then
-        ok "Bereits aktuell. Nichts zu tun."
-        exit 0
+    LATEST_TAG="$(git tag -l --sort=-v:refname | head -n1 || true)"
+    if [[ -z "$LATEST_TAG" ]]; then
+        warn "Keine Release-Tags gefunden – es wird auf den Hauptzweig aktualisiert."
+        TARGET="origin/$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+    else
+        printf '  neuestes Release:    %s\n' "$LATEST_TAG"
+        TARGET="$LATEST_TAG"
+        if [[ "$CURRENT" == "$LATEST_TAG" ]]; then
+            ok "Bereits aktuell. Nichts zu tun."
+            exit 0
+        fi
     fi
 fi
 
@@ -51,15 +62,29 @@ if bash "$INSTALL_DIR/deploy/backup.sh"; then
     ok "Sicherung erstellt"
 else
     warn "Sicherung fehlgeschlagen (läuft die Datenbank?)."
-    printf '  Weiter ohne Sicherung? [j/N]: '
-    read -r answer < /dev/tty || true
-    [[ "$answer" =~ ^([jJ]|[yY])$ ]] || die "Abgebrochen."
+    if [[ "${POLYSPORT_ASSUME_YES:-0}" == "1" ]]; then
+        warn "Es wird ohne Sicherung weitergemacht (unbeaufsichtigter Lauf)."
+    else
+        printf '  Weiter ohne Sicherung? [j/N]: '
+        read -r answer < /dev/tty || true
+        [[ "$answer" =~ ^([jJ]|[yY])$ ]] || die "Abgebrochen."
+    fi
 fi
 
 step "Auf $TARGET wechseln"
 
 git -c advice.detachedHead=false checkout --quiet "$TARGET"
 ok "Quellcode aktualisiert"
+
+# Die laufende Version bekommt die Anwendung als Umgebungsvariable, damit
+# sie in der Weboberfläche gegen GitHub verglichen werden kann.
+NEW_VERSION="$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)"
+if grep -q '^POLYSPORT_VERSION=' .env; then
+    sed -i "s/^POLYSPORT_VERSION=.*/POLYSPORT_VERSION=${NEW_VERSION}/" .env
+else
+    printf 'POLYSPORT_VERSION=%s\n' "$NEW_VERSION" >> .env
+fi
+ok "Version $NEW_VERSION eingetragen"
 
 step "Neu bauen und starten"
 
