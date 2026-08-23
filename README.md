@@ -183,9 +183,13 @@ dotnet run --project PolySport --launch-profile https
 
 `appsettings.Development.json` zeigt auf LocalDB (`PolySport-Dev`), es sind
 also keine Zugangsdaten nötig. Migrationen wendet die Anwendung beim Start
-selbst an. Das Standard-Admin-Konto lautet `admin@admin.com` / `Admin123!` und
-lässt sich über die Umgebungsvariablen `Seed__AdminEmail` und
-`Seed__AdminPassword` überschreiben.
+selbst an.
+
+Für die Entwicklung wird ein Admin-Konto `admin@admin.com` / `Admin123!`
+angelegt. **Ausserhalb der Entwicklung gibt es kein Standardpasswort**: ohne
+`Seed__AdminPassword` wird kein Konto erstellt und die Anwendung schreibt einen
+Fehler ins Protokoll. Die Docker-Installation setzt den Wert automatisch aus
+der `.env`.
 
 EF-Werkzeuge und Migrationen:
 

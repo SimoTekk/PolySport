@@ -68,35 +68,49 @@ using (var scope = app.Services.CreateScope())
 
     // Zugangsdaten des ersten Admins kommen aus der Konfiguration
     // (Umgebungsvariablen Seed__AdminEmail / Seed__AdminPassword).
+    // Ausserhalb der Entwicklung gibt es bewusst keinen Rückfallwert: ein
+    // fest eingebautes Passwort in einem öffentlichen Repository wäre offen
+    // für jeden. Fehlt die Angabe, wird kein Konto angelegt.
     var adminEmail = builder.Configuration["Seed:AdminEmail"] ?? "admin@admin.com";
-    var adminPassword = builder.Configuration["Seed:AdminPassword"] ?? "Admin123!";
+    var adminPassword = builder.Configuration["Seed:AdminPassword"]
+        ?? (app.Environment.IsDevelopment() ? "Admin123!" : null);
 
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
     if (adminUser == null)
     {
-        adminUser = new ApplicationUser
+        if (string.IsNullOrEmpty(adminPassword))
         {
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true,
-            FirstName = "Admin",
-            LastName = "Admin",
-            DisplayName = "Administrator",
-            CreatedAt = DateTime.UtcNow,
-            IsApproved = true,
-            ApprovedAt = DateTime.UtcNow
-        };
-
-        var result = await userManager.CreateAsync(adminUser, adminPassword);
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, AppRoles.Admin);
-            logger.LogInformation("Admin-Konto {Email} wurde angelegt.", adminEmail);
+            logger.LogError(
+                "Kein Admin-Konto angelegt: Seed__AdminPassword ist nicht gesetzt. " +
+                "Bitte die Umgebungsvariable setzen und die Anwendung neu starten.");
         }
         else
         {
-            logger.LogError("Admin-Konto konnte nicht angelegt werden: {Fehler}",
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                FirstName = "Admin",
+                LastName = "Admin",
+                DisplayName = "Administrator",
+                CreatedAt = DateTime.UtcNow,
+                IsApproved = true,
+                ApprovedAt = DateTime.UtcNow
+            };
+
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, AppRoles.Admin);
+                logger.LogInformation("Admin-Konto {Email} wurde angelegt.", adminEmail);
+            }
+            else
+            {
+                logger.LogError("Admin-Konto konnte nicht angelegt werden: {Fehler}",
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
         }
     }
     else if (!adminUser.IsApproved)
