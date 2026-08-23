@@ -267,9 +267,17 @@ step "Warten bis die Webseite antwortet"
 APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2-)"
 APP_PORT="${APP_PORT:-8080}"
 
+# Der Port kann an eine bestimmte Adresse gebunden sein – dann antwortet
+# 127.0.0.1 nicht, und die Prüfung müsste dort gar nicht erst anklopfen.
+BIND_ADDRESS_CHECK="$(grep -E '^BIND_ADDRESS=' .env | cut -d= -f2-)"
+case "${BIND_ADDRESS_CHECK:-0.0.0.0}" in
+    0.0.0.0|::|"") CHECK_HOST="127.0.0.1" ;;
+    *)             CHECK_HOST="$BIND_ADDRESS_CHECK" ;;
+esac
+
 READY=0
 for _ in $(seq 1 90); do
-    if curl -fsS -o /dev/null "http://127.0.0.1:${APP_PORT}/" 2>/dev/null; then
+    if curl -fsS -o /dev/null "http://${CHECK_HOST}:${APP_PORT}/" 2>/dev/null; then
         READY=1
         break
     fi
@@ -292,6 +300,20 @@ printf '\n'
 
 # Bei einer Bindung auf die Loopback-Adresse wäre die Angabe der Netz-IP
 # schlicht falsch – dann ist die Seite nur auf dem Container selbst erreichbar.
+case "$BIND_ADDRESS" in
+    0.0.0.0|::)
+        # Überall veröffentlicht – die Netzadresse des Containers nennen
+        printf '  Webseite:   http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
+        ;;
+    127.0.0.1|localhost)
+        : # weiter unten behandelt
+        ;;
+    *)
+        # An eine bestimmte Adresse gebunden – genau die gilt
+        printf '  Webseite:   http://%s:%s\n' "$BIND_ADDRESS" "$APP_PORT"
+        ;;
+esac
+
 if [[ "$BIND_ADDRESS" == "127.0.0.1" || "$BIND_ADDRESS" == "localhost" ]]; then
     printf '  Webseite:   http://127.0.0.1:%s  %s(nur auf diesem Container)%s\n' "$APP_PORT" "$YELLOW" "$RESET"
     printf '\n'
@@ -303,8 +325,6 @@ if [[ "$BIND_ADDRESS" == "127.0.0.1" || "$BIND_ADDRESS" == "localhost" ]]; then
     printf '    cd %s && docker compose up -d\n' "$INSTALL_DIR"
     printf '\n'
     printf '  Danach erreichbar unter http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
-else
-    printf '  Webseite:   http://%s:%s\n' "${IP_ADDRESS:-<IP-des-Containers>}" "$APP_PORT"
 fi
 
 printf '  Anmeldung:  %s\n' "$ADMIN_EMAIL"

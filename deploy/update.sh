@@ -100,13 +100,26 @@ docker compose ps
 APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2-)"
 APP_PORT="${APP_PORT:-8080}"
 
+# Auf welcher Adresse ist der Port überhaupt veröffentlicht? Ist er an eine
+# bestimmte Adresse gebunden, antwortet 127.0.0.1 nicht – dann würde die
+# Prüfung fehlschlagen, obwohl die Anwendung längst läuft.
+BIND_ADDRESS="$(grep -E '^BIND_ADDRESS=' .env | cut -d= -f2-)"
+case "${BIND_ADDRESS:-0.0.0.0}" in
+    0.0.0.0|::|"") CHECK_HOST="127.0.0.1" ;;
+    *)             CHECK_HOST="$BIND_ADDRESS" ;;
+esac
+
 for _ in $(seq 1 60); do
-    if curl -fsS -o /dev/null "http://127.0.0.1:${APP_PORT}/" 2>/dev/null; then
+    if curl -fsS -o /dev/null "http://${CHECK_HOST}:${APP_PORT}/" 2>/dev/null; then
         printf '\n%sAktualisierung abgeschlossen – die Webseite antwortet.%s\n' "$GREEN" "$RESET"
         exit 0
     fi
     sleep 5
 done
 
+# Maschinenlesbarer Grund, damit die Weboberfläche eine brauchbare
+# Meldung zeigt statt der letzten Zeilen einer Tabelle.
+printf 'POLYSPORT_RESULT=Neue Version läuft, aber http://%s:%s antwortete innerhalb von 5 Minuten nicht\n' \
+    "$CHECK_HOST" "$APP_PORT"
 warn "Die Webseite antwortet noch nicht. Protokoll: cd $INSTALL_DIR && docker compose logs -f"
 exit 1

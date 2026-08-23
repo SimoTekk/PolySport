@@ -60,8 +60,17 @@ if POLYSPORT_ASSUME_YES=1 POLYSPORT_TARGET="$VERSION" \
     exit 0
 fi
 
-# Fehlerfall: letzte Zeilen des Protokolls in die Meldung übernehmen
-DETAIL="$(tail -n 3 "$LOG" 2>/dev/null | tr '\n' ' ' | tr -d '\r' | cut -c1-300)"
+# Fehlerfall: bevorzugt den vom Skript gemeldeten Grund verwenden, sonst
+# die letzten Protokollzeilen. Ohne das landete schon mal die Ausgabe von
+# "docker compose ps" als Fehlermeldung in der Oberfläche.
+DETAIL="$(grep -m1 '^POLYSPORT_RESULT=' "$LOG" 2>/dev/null | cut -d= -f2- | cut -c1-300)"
+if [[ -z "$DETAIL" ]]; then
+    DETAIL="$(grep -aiE 'error|fehler|failed|cannot|denied|killed' "$LOG" 2>/dev/null \
+        | tail -n 2 | tr '\n' ' ' | tr -d '\r' | cut -c1-300)"
+fi
+if [[ -z "$DETAIL" ]]; then
+    DETAIL="$(tail -n 3 "$LOG" 2>/dev/null | tr '\n' ' ' | tr -d '\r' | cut -c1-300)"
+fi
 write_status failed "Fehlgeschlagen: ${DETAIL:-siehe journalctl -u polysport-update}" "$VERSION"
 FINAL_WRITTEN=1
 echo "Update fehlgeschlagen, siehe $LOG"
