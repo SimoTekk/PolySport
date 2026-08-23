@@ -24,6 +24,9 @@ namespace PolySport.Services
 
         UpdateStatus GetStatus();
 
+        /// <summary>Löscht eine hängengebliebene Statusmeldung.</summary>
+        bool ClearStatus();
+
         string RepositoryUrl { get; }
     }
 
@@ -33,6 +36,9 @@ namespace PolySport.Services
     /// </summary>
     public class UpdateService : IUpdateService
     {
+        /// <summary>Ab dieser Dauer ohne Fortschritt gilt ein Update als hängengeblieben.</summary>
+        private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(30);
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<UpdateService> _logger;
         private readonly string _repository;
@@ -202,25 +208,62 @@ namespace PolySport.Services
                 values.TryGetValue("message", out var message);
                 values.TryGetValue("updated", out var updated);
 
+                var parsedState = state?.ToLowerInvariant() switch
+                {
+                    "requested" => UpdateState.Requested,
+                    "running" => UpdateState.Running,
+                    "success" => UpdateState.Success,
+                    "failed" => UpdateState.Failed,
+                    _ => UpdateState.Idle
+                };
+
+                DateTime? updatedAt = DateTime.TryParse(updated, CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null;
+
+                // Ein Update dauert Minuten, nicht Stunden. Meldet der Dienst
+                // auf dem Host so lange keinen Fortschritt, ist er
+                // abgebrochen, ohne einen Abschluss zu schreiben. Sonst würde
+                // die Oberfläche für immer "läuft" zeigen.
+                var running = parsedState is UpdateState.Requested or UpdateState.Running;
+                if (running && updatedAt.HasValue &&
+                    DateTime.UtcNow - updatedAt.Value > StaleAfter)
+                {
+                    parsedState = UpdateState.Stale;
+                }
+
                 return new UpdateStatus
                 {
-                    State = state?.ToLowerInvariant() switch
-                    {
-                        "requested" => UpdateState.Requested,
-                        "running" => UpdateState.Running,
-                        "success" => UpdateState.Success,
-                        "failed" => UpdateState.Failed,
-                        _ => UpdateState.Idle
-                    },
+                    State = parsedState,
                     Version = version,
                     Message = message,
-                    UpdatedAt = DateTime.TryParse(updated, CultureInfo.InvariantCulture,
-                        DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null
+                    UpdatedAt = updatedAt
                 };
             }
             catch
             {
                 return new UpdateStatus();
+            }
+        }
+
+        public bool ClearStatus()
+        {
+            try
+            {
+                var path = Path.Combine(_stateDirectory, "update-status");
+                if (File.Exists(path)) File.Delete(path);
+
+                // Eine nicht abgeholte Anforderung ebenfalls entfernen, sonst
+                // startet der Wächter sie beim nächsten Mal doch noch.
+                var request = Path.Combine(_stateDirectory, "update-request");
+                if (File.Exists(request)) File.Delete(request);
+
+                _logger.LogInformation("Update-Status wurde zurückgesetzt.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Update-Status konnte nicht zurückgesetzt werden.");
+                return false;
             }
         }
 

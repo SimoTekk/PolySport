@@ -31,12 +31,19 @@ write_status() {
 
 [[ -f "$REQUEST" ]] || exit 0
 
+# Wird gesetzt, sobald ein Abschluss geschrieben wurde. Bricht das Skript
+# vorher ab – etwa durch das Zeitlimit von systemd – hinterlässt der
+# Trap eine Meldung, statt die Oberfläche auf "läuft" stehen zu lassen.
+FINAL_WRITTEN=0
+trap 'code=$?; if [[ "$FINAL_WRITTEN" -eq 0 ]]; then write_status failed "Vorgang abgebrochen (Code $code) – siehe journalctl -u polysport-update" "${VERSION:-}"; fi' EXIT
+
 VERSION="$(head -n1 "$REQUEST" | tr -d '\r\n[:space:]')"
 # Anforderung sofort entfernen, damit sie nicht zweimal läuft
 rm -f "$REQUEST"
 
 if [[ -z "$VERSION" ]]; then
     write_status failed "Anforderung enthielt keine Version"
+    FINAL_WRITTEN=1
     exit 1
 fi
 
@@ -48,6 +55,7 @@ LOG="$STATE_DIR/update-last.log"
 if POLYSPORT_ASSUME_YES=1 POLYSPORT_TARGET="$VERSION" \
         bash "$INSTALL_DIR/deploy/update.sh" >"$LOG" 2>&1; then
     write_status success "Update auf ${VERSION} abgeschlossen" "$VERSION"
+    FINAL_WRITTEN=1
     echo "Update erfolgreich."
     exit 0
 fi
@@ -55,5 +63,6 @@ fi
 # Fehlerfall: letzte Zeilen des Protokolls in die Meldung übernehmen
 DETAIL="$(tail -n 3 "$LOG" 2>/dev/null | tr '\n' ' ' | tr -d '\r' | cut -c1-300)"
 write_status failed "Fehlgeschlagen: ${DETAIL:-siehe journalctl -u polysport-update}" "$VERSION"
+FINAL_WRITTEN=1
 echo "Update fehlgeschlagen, siehe $LOG"
 exit 1

@@ -95,17 +95,45 @@ else if (status.State == UpdateState.Success)
         }
     </div>
 }
+else if (status.State == UpdateState.Stale)
+{
+    <div class="alert alert-warning mt-4">
+        <strong>Der Update-Vorgang meldet sich nicht mehr.</strong>
+        <p class="mb-2 mt-2">
+            Letzte Meldung
+            @if (status.Age.HasValue)
+            {
+                <span>vor @((int)status.Age.Value.TotalMinutes) Minuten</span>
+            }
+            : @status.Message
+        </p>
+        <p class="mb-3 small">
+            Vermutlich ist der Dienst auf dem Host abgebrochen, ohne einen Abschluss
+            zu schreiben. Prüfen lässt sich das auf dem Server mit
+            <code>systemctl status polysport-update</code> und
+            <code>journalctl -u polysport-update</code>. Läuft die Anwendung in der
+            erwarteten Version, ist das Update durchgelaufen und nur die Meldung
+            blieb hängen.
+        </p>
+        <form asp-action="ClearStatus" method="post">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Meldung zurücksetzen</button>
+        </form>
+    </div>
+}
 else if (status.State == UpdateState.Failed)
 {
     <div class="alert alert-danger mt-4">
         <strong>Das letzte Update ist fehlgeschlagen.</strong>
         <div>@status.Message</div>
         <hr />
-        <p class="mb-0 small">
+        <p class="mb-3 small">
             Die vorherige Version läuft weiter. Protokoll auf dem Server ansehen mit
             <code>journalctl -u polysport-update</code> beziehungsweise
             <code>cd /opt/polysport &amp;&amp; docker compose logs</code>.
         </p>
+        <form asp-action="ClearStatus" method="post">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Meldung zurücksetzen</button>
+        </form>
     </div>
 }
 

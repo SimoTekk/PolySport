@@ -20,6 +20,9 @@ namespace PolySport.Services
         public string? Version { get; init; }
         public string? Message { get; init; }
         public DateTime? UpdatedAt { get; init; }
+
+        /// <summary>Wie lange die Meldung schon unverändert ist.</summary>
+        public TimeSpan? Age => UpdatedAt.HasValue ? DateTime.UtcNow - UpdatedAt.Value : null;
     }
 
     public enum UpdateState
@@ -34,6 +37,12 @@ namespace PolySport.Services
         Running,
 
         Success,
-        Failed
+        Failed,
+
+        /// <summary>
+        /// Meldet seit langem keinen Fortschritt mehr. Der Dienst auf dem Host
+        /// ist wahrscheinlich abgebrochen, ohne einen Abschluss zu schreiben.
+        /// </summary>
+        Stale
     }
 }

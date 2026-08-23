@@ -60,6 +60,19 @@ namespace PolySport.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Update/ClearStatus – hängengebliebene Meldung wegräumen
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ClearStatus()
+        {
+            if (_updateService.ClearStatus())
+                TempData["Success"] = "Statusmeldung zurückgesetzt.";
+            else
+                TempData["Error"] = "Die Statusmeldung konnte nicht entfernt werden.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
         // GET: Update/Status – für die Fortschrittsanzeige per JavaScript
         [HttpGet]
         public IActionResult Status()
