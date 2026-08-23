@@ -6,6 +6,15 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.4.3 – 24.08.2026
+
+- Testrelease: prüft, ob mehrere Versionen gruppiert angezeigt werden. Keine Änderung am Programm
+- Dieser Eintrag und der zu v1.4.2 werden nach dem Test wieder entfernt
+
+## v1.4.2 – 24.08.2026
+
+- Testrelease: zweiter Eintrag, damit die Gruppierung mit zwei Versionen sichtbar wird. Keine Änderung am Programm
+
 ## v1.4.1 – 24.08.2026
 
 - Die Änderungen stehen jetzt direkt im Rahmen „Verfügbar" unter der Prüfzeit, statt in einem eigenen Kasten weiter unten
