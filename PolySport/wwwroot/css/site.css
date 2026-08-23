@@ -27,6 +27,16 @@ body {
 }
 
 /* ============================================================
+   Änderungsliste auf der Update-Seite
+   ============================================================ */
+.changenotes-scroll {
+  max-height: 22rem;
+  overflow-y: auto;
+  /* Platz, damit der Text nicht am Rollbalken klebt */
+  padding-right: 0.5rem;
+}
+
+/* ============================================================
    Saisonblatt
    ------------------------------------------------------------
    Bei vielen Matches wird die Tabelle breiter als der Bildschirm.

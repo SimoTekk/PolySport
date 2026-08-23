@@ -109,11 +109,12 @@ namespace PolySport.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // 404 heisst in der Regel: Repository ist privat oder umbenannt.
-                    var hint = response.StatusCode == System.Net.HttpStatusCode.NotFound
-                        ? "Repository nicht erreichbar (privat?)"
-                        : $"GitHub antwortete mit {(int)response.StatusCode}";
-                    return Store(new UpdateInfo { CurrentVersion = _currentVersion, CheckedAt = DateTime.UtcNow, Error = hint });
+                    return Store(new UpdateInfo
+                    {
+                        CurrentVersion = _currentVersion,
+                        CheckedAt = DateTime.UtcNow,
+                        Error = DescribeFailure(response)
+                    });
                 }
 
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -391,6 +392,37 @@ namespace PolySport.Services
         {
             _cached = info;
             return info;
+        }
+
+        /// <summary>
+        /// Verständliche Meldung zu einer fehlgeschlagenen Anfrage. GitHub
+        /// lässt anonym 60 Anfragen pro Stunde zu – wird das erreicht, kommt
+        /// 403 zurück, was ohne Erklärung ratlos macht.
+        /// </summary>
+        private static string DescribeFailure(HttpResponseMessage response)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return "Repository nicht erreichbar (privat?)";
+
+            var isRateLimited =
+                response.StatusCode == System.Net.HttpStatusCode.Forbidden ||
+                (int)response.StatusCode == 429;
+
+            if (isRateLimited)
+            {
+                var wait = "";
+                if (response.Headers.TryGetValues("x-ratelimit-reset", out var values)
+                    && long.TryParse(values.FirstOrDefault(), out var epoch))
+                {
+                    var minutes = (int)Math.Ceiling(
+                        (DateTimeOffset.FromUnixTimeSeconds(epoch) - DateTimeOffset.UtcNow).TotalMinutes);
+                    if (minutes > 0) wait = $", nächster Versuch in {minutes} Minuten möglich";
+                }
+
+                return $"Anfragelimit von GitHub erreicht{wait}";
+            }
+
+            return $"GitHub antwortete mit {(int)response.StatusCode}";
         }
 
         /// <summary>

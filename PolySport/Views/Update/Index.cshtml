@@ -20,17 +20,17 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<div class="row g-3">
-    <div class="col-md-6">
-        <div class="card h-100">
+<div class="row g-3 align-items-start">
+    <div class="col-md-4">
+        <div class="card">
             <div class="card-body">
                 <h6 class="text-muted text-uppercase small mb-2">Installiert</h6>
                 <p class="display-6 mb-0">@info.CurrentVersion</p>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card h-100 @(info.IsUpdateAvailable ? "border-primary" : "")">
+    <div class="col-md-8">
+        <div class="card @(info.IsUpdateAvailable ? "border-primary" : "")">
             <div class="card-body">
                 <h6 class="text-muted text-uppercase small mb-2">Verfügbar</h6>
                 <p class="display-6 mb-0">@(info.LatestVersion ?? "–")</p>
@@ -38,6 +38,56 @@
                 {
                     <p class="text-muted small mb-0 mt-2">
                         geprüft am @info.CheckedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                }
+
+                @* Änderungen direkt hier, nicht in einem eigenen Kasten weiter unten *@
+                @if (info.IsUpdateAvailable && Model.PendingChanges.Any())
+                {
+                    <hr />
+                    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+                        <h6 class="mb-0">ChangeNotes</h6>
+                        @if (Model.VersionsBehind > 1)
+                        {
+                            <span class="text-muted small">@Model.VersionsBehind Versionen seit @info.CurrentVersion</span>
+                        }
+                    </div>
+
+                    @* Bei vielen Versionen scrollbar, damit die Seite bedienbar bleibt *@
+                    <div class="changenotes @(Model.VersionsBehind > 3 ? "changenotes-scroll" : "")">
+                        @foreach (var entry in Model.PendingChanges)
+                        {
+                            @if (Model.VersionsBehind > 1)
+                            {
+                                <div class="fw-semibold small mt-3 mb-1">
+                                    @entry.Version
+                                    @if (!string.IsNullOrEmpty(entry.Date))
+                                    {
+                                        <span class="text-muted fw-normal">– @entry.Date</span>
+                                    }
+                                </div>
+                            }
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var item in entry.Items)
+                                {
+                                    <li class="d-flex gap-2 mb-2">
+                                        <span aria-hidden="true">🔹</span>
+                                        <span>@item</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+                else if (info.IsUpdateAvailable)
+                {
+                    <hr />
+                    <p class="text-muted small mb-0">
+                        Zu dieser Version ist noch keine Änderungsliste abrufbar.
+                        @if (!string.IsNullOrEmpty(Model.RepositoryUrl))
+                        {
+                            <a href="@Model.RepositoryUrl/blob/master/CHANGELOG.md" target="_blank" rel="noopener">Auf GitHub ansehen</a>
+                        }
                     </p>
                 }
             </div>
@@ -57,63 +107,6 @@
             </span>
         }
     </div>
-}
-
-@* Änderungen zwischen installierter und neuester Version *@
-@if (info.IsUpdateAvailable && Model.PendingChanges.Any())
-{
-    <div class="card mt-4">
-        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <span>Was sich ändert</span>
-            <span class="text-muted small">
-                @if (Model.VersionsBehind == 1)
-                {
-                    <span>eine neue Version</span>
-                }
-                else
-                {
-                    <span>@Model.VersionsBehind neue Versionen seit @info.CurrentVersion</span>
-                }
-            </span>
-        </div>
-        <div class="card-body">
-            @foreach (var entry in Model.PendingChanges)
-            {
-                <div class="mb-4">
-                    <h5 class="mb-1">
-                        @entry.Version
-                        @if (!string.IsNullOrEmpty(entry.Date))
-                        {
-                            <span class="text-muted fs-6 fw-normal">– @entry.Date</span>
-                        }
-                    </h5>
-                    @if (entry.Items.Any())
-                    {
-                        <ul class="mb-0">
-                            @foreach (var item in entry.Items)
-                            {
-                                <li>@item</li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="text-muted mb-0">Keine Einzelheiten hinterlegt.</p>
-                    }
-                </div>
-            }
-        </div>
-    </div>
-}
-else if (info.IsUpdateAvailable)
-{
-    <p class="text-muted mt-4">
-        Zu dieser Version ist keine Änderungsliste hinterlegt.
-        @if (!string.IsNullOrEmpty(Model.RepositoryUrl))
-        {
-            <a href="@Model.RepositoryUrl/blob/master/CHANGELOG.md" target="_blank" rel="noopener">Änderungen auf GitHub ansehen</a>
-        }
-    </p>
 }
 
 @if (Model.IsUpdateRunning)

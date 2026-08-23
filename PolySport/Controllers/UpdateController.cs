@@ -20,9 +20,14 @@ namespace PolySport.Controllers
         // GET: Update
         public async Task<IActionResult> Index()
         {
-            // Immer frisch prüfen: wer diese Seite öffnet, will den aktuellen
-            // Stand sehen und nicht das Ergebnis der letzten Hintergrundprüfung.
-            var info = await _updateService.CheckAsync();
+            // Beim Öffnen frisch prüfen, aber nicht bei jedem Neuladen: GitHub
+            // erlaubt anonym 60 Anfragen pro Stunde. Ein Ergebnis, das keine
+            // Minute alt ist, gilt als aktuell genug.
+            var cached = _updateService.Cached;
+            var info = cached.CheckedAt.HasValue
+                       && DateTime.UtcNow - cached.CheckedAt.Value < TimeSpan.FromMinutes(1)
+                ? cached
+                : await _updateService.CheckAsync();
 
             return View(new UpdatePageViewModel
             {

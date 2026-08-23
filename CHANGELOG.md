@@ -6,6 +6,11 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.4.1 – 24.08.2026
+
+- Die Änderungen stehen jetzt direkt im Rahmen „Verfügbar" unter der Prüfzeit, statt in einem eigenen Kasten weiter unten
+- Bei mehreren Versionen wird pro Version gruppiert; ab vier Versionen ist die Liste scrollbar, damit die Seite bedienbar bleibt
+
 ## v1.4.0 – 24.08.2026
 
 - **Spieler bearbeiten**: Name, E-Mail und Telefon lassen sich ändern. Bereits erfasste Tore und Einsätze bleiben erhalten – aus „Dummy1" wird also der richtige Name, ohne dass die Statistik leidet
