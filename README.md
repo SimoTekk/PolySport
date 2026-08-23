@@ -26,6 +26,15 @@ ASP.NET Core 8 (MVC) mit Identity und SQL Server.
 Ein Befehl, der Rest läuft geführt ab:
 
 ```bash
+apt-get update && apt-get install -y curl && \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/SimoTekk/PolySport/master/deploy/install.sh)"
+```
+
+Der Teil vor dem Skript installiert `curl` – minimale Debian-Vorlagen bringen
+es nicht mit, und ohne curl lässt sich das Skript nicht herunterladen. Ist curl
+schon vorhanden, genügt der kurze Aufruf:
+
+```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SimoTekk/PolySport/master/deploy/install.sh)"
 ```
 

@@ -97,14 +97,35 @@ if [[ -f /proc/1/environ ]] && grep -qa container=lxc /proc/1/environ 2>/dev/nul
 fi
 
 # ---------------------------------------------------------------
+step "Grundwerkzeuge"
+
+# Minimale Debian-Vorlagen bringen weder curl noch git mit. Beides wird
+# später gebraucht: curl für die Docker-Installation und die Prüfung am
+# Ende, git zum Holen des Quellcodes.
+MISSING=()
+for tool in curl git ca-certificates; do
+    case "$tool" in
+        ca-certificates) dpkg -s ca-certificates >/dev/null 2>&1 || MISSING+=("$tool") ;;
+        *) command -v "$tool" >/dev/null 2>&1 || MISSING+=("$tool") ;;
+    esac
+done
+
+if (( ${#MISSING[@]} > 0 )); then
+    info "Es fehlen: ${MISSING[*]} – werden installiert."
+    apt-get update -qq
+    apt-get install -y -qq "${MISSING[@]}" >/dev/null || die "Installation von ${MISSING[*]} fehlgeschlagen."
+    ok "${MISSING[*]} installiert"
+else
+    ok "curl und git sind vorhanden"
+fi
+
+# ---------------------------------------------------------------
 step "Docker"
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     ok "Docker mit Compose-Plugin ist vorhanden"
 else
     info "Docker wird installiert (offizielles Installationsskript)."
-    apt-get update -qq
-    apt-get install -y -qq curl ca-certificates git >/dev/null
     curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
     sh /tmp/get-docker.sh
     rm -f /tmp/get-docker.sh
@@ -112,9 +133,6 @@ else
     docker compose version >/dev/null 2>&1 || die "Docker Compose fehlt weiterhin."
     ok "Docker installiert"
 fi
-
-command -v git >/dev/null 2>&1 || { apt-get install -y -qq git >/dev/null; }
-ok "git vorhanden"
 
 # ---------------------------------------------------------------
 step "Quellcode"
