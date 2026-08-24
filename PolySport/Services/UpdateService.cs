@@ -291,23 +291,62 @@ namespace PolySport.Services
             if (_changelog != null && DateTime.UtcNow - _changelogLoadedAt < ChangelogCacheDuration)
                 return _changelog;
 
+            var markdown = await FetchChangelogTextAsync(cancellationToken);
+            if (markdown == null) return new List<ChangelogEntry>();
+
+            _changelog = ParseChangelog(markdown);
+            _changelogLoadedAt = DateTime.UtcNow;
+            return _changelog;
+        }
+
+        /// <summary>
+        /// Holt CHANGELOG.md, bevorzugt über die GitHub-API.
+        ///
+        /// Grund: raw.githubusercontent.com liefert bis zu fünf Minuten die
+        /// alte Fassung aus seinem Zwischenspeicher. Genau dann, wenn man die
+        /// Notizen braucht – direkt nach einer Veröffentlichung – wären sie
+        /// noch nicht da. Die API antwortet sofort mit dem aktuellen Stand.
+        /// Klappt die API nicht (etwa bei erschöpftem Anfragelimit), dient der
+        /// Raw-Weg als Rückfall.
+        /// </summary>
+        private async Task<string?> FetchChangelogTextAsync(CancellationToken cancellationToken)
+        {
+            var apiUrl = $"https://api.github.com/repos/{_repository}/contents/CHANGELOG.md?ref=master";
+            var rawUrl = $"https://raw.githubusercontent.com/{_repository}/master/CHANGELOG.md";
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("PolySport", "1.0"));
+                // Liefert den Dateiinhalt direkt statt in JSON verpackt
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.raw"));
+
+                using var response = await client.GetAsync(apiUrl, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadAsStringAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Änderungsliste über die API nicht verfügbar ({Status}), versuche den Rückfall.",
+                    (int)response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Änderungsliste über die API fehlgeschlagen: {Message}", ex.Message);
+            }
+
             try
             {
                 var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(10);
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("PolySport", "1.0"));
 
-                var url = $"https://raw.githubusercontent.com/{_repository}/master/CHANGELOG.md";
-                var markdown = await client.GetStringAsync(url, cancellationToken);
-
-                _changelog = ParseChangelog(markdown);
-                _changelogLoadedAt = DateTime.UtcNow;
-                return _changelog;
+                return await client.GetStringAsync(rawUrl, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning("Änderungsliste konnte nicht geladen werden: {Message}", ex.Message);
-                return new List<ChangelogEntry>();
+                return null;
             }
         }
 
