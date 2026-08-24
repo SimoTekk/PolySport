@@ -3,6 +3,12 @@
     ViewData["Title"] = "Match bearbeiten";
 }
 
+@* Select2 wird nur bei offenem Kader gebraucht; ein @section darf aber nicht
+   in einer Bedingung stehen, darum das Stylesheet immer einbinden. *@
+@section VendorStyles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}
+
 <h2>Match bearbeiten</h2>
 <hr />
 
@@ -31,11 +37,38 @@
                 <span asp-validation-for="OpponentName" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-4">
+            <div class="form-group mb-3">
                 <label asp-for="MatchDate" class="control-label"></label>
                 <input asp-for="MatchDate" class="form-control" type="datetime-local" />
                 <span asp-validation-for="MatchDate" class="text-danger"></span>
             </div>
+
+            @if (Model.CanEditRoster)
+            {
+                <div class="form-group mb-4">
+                    <label asp-for="SelectedPlayerIds" class="control-label">Spieler im Kader (Tippen zum Suchen)</label>
+                    <select asp-for="SelectedPlayerIds" class="form-control select2-multiple" asp-items="Model.AvailablePlayers" multiple="multiple">
+                    </select>
+                    <span asp-validation-for="SelectedPlayerIds" class="text-danger"></span>
+                    <div class="form-text">
+                        Änderbar, solange das Match nicht gestartet ist. Nach dem
+                        Start des 1. Drittels bleibt der Kader fest.
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="form-group mb-4">
+                    <label class="control-label">Spieler im Kader</label>
+                    <div class="form-control-plaintext">
+                        @(Model.RosterNames.Any() ? string.Join(", ", Model.RosterNames) : "Kein Kader erfasst.")
+                    </div>
+                    <div class="form-text">
+                        Das Match ist gestartet – der Kader lässt sich nicht mehr
+                        ändern, weil Einsätze und Tore daran hängen.
+                    </div>
+                </div>
+            }
 
             <div class="form-group">
                 <input type="submit" value="Speichern" class="btn btn-success" />
@@ -44,12 +77,29 @@
         </form>
 
         <p class="text-muted small mt-4 mb-0">
-            Kader und Tore werden hier nicht verändert. Tore lassen sich auf der
-            Detailseite einzeln löschen und neu erfassen.
+            Tore werden hier nicht verändert. Die lassen sich auf der Detailseite
+            einzeln löschen und neu erfassen.
         </p>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    @if (Model.CanEditRoster)
+    {
+        @* jQuery kommt bereits aus dem Layout – ein zweites Laden würde die
+           vorher registrierte Validierung an eine andere jQuery-Instanz hängen. *@
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+        <script>
+            $(document).ready(function () {
+                $('.select2-multiple').select2({
+                    placeholder: "Spieler suchen und auswählen...",
+                    allowClear: true,
+                    width: '100%'
+                });
+            });
+        </script>
+    }
 }

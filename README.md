@@ -6,6 +6,8 @@ ASP.NET Core 8 (MVC) mit Identity und SQL Server.
 ## Was die Anwendung kann
 
 - **Matches** anlegen, Kader zusammenstellen, Spiel starten und beenden
+- Saison, Gegner und Datum eines Matches nachträglich korrigieren; der
+  Kader zusätzlich, solange das Match nicht gestartet ist
 - **Spieluhr** auf dem Server: Drittel starten und beenden, Tore werden
   automatisch mit Drittel und Spielzeit erfasst
 - **Tore und Assists** inklusive Gegentore, mit Torfolge und Zwischenstand

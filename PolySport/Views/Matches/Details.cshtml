@@ -224,7 +224,7 @@
         @if (User.IsInRole(AppRoles.Admin))
         {
             <a asp-action="Edit" asp-route-id="@Model.MatchId" class="btn btn-outline-primary">
-                Saison, Gegner oder Datum ändern
+                @(Model.HasStarted ? "Saison, Gegner oder Datum ändern" : "Saison, Gegner, Datum oder Kader ändern")
             </a>
         }
     </div>

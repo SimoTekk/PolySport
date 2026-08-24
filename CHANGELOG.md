@@ -6,6 +6,13 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.5.0 – 24.08.2026
+
+- **Kader nachträglich anpassen**: solange ein Match nicht gestartet ist, lässt sich der Kader unter „Match bearbeiten" ändern – vergessene Spieler nachtragen oder kurzfristige Absagen austragen, ohne das Match neu anzulegen
+- Sobald das 1. Drittel gestartet ist, bleibt der Kader fest und wird nur noch angezeigt: daran hängen Einsätze und Tore
+- Spieler mit einem Tor oder Assist in diesem Match lassen sich nicht aus dem Kader entfernen; das Formular sagt, wer betroffen ist
+- Ein inzwischen inaktiv geschalteter Spieler bleibt im Kader stehen und wird als „(inaktiv)" angezeigt, statt beim Speichern stillschweigend zu verschwinden
+
 ## v1.4.2 – 24.08.2026
 
 - Die Änderungsliste erscheint jetzt sofort nach einer Veröffentlichung. Bisher lieferte GitHub sie bis zu fünf Minuten aus einem Zwischenspeicher, sodass nach einem Release erst „keine Änderungsliste abrufbar" stand

@@ -89,7 +89,7 @@ namespace PolySport.Controllers
             return View(viewModel);
         }
 
-        // GET: Matches/Edit/5 – Stammdaten ändern (Saison, Gegner, Datum)
+        // GET: Matches/Edit/5 – Stammdaten ändern (Saison, Gegner, Datum, Kader)
         [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -97,9 +97,13 @@ namespace PolySport.Controllers
 
             var match = await _context.Matches
                 .Include(m => m.Goals)
+                .Include(m => m.MatchPlayers)
+                    .ThenInclude(mp => mp.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (match == null) return NotFound();
+
+            var rosterIds = match.MatchPlayers.Select(mp => mp.UserId).ToList();
 
             return View(new EditMatchViewModel
             {
@@ -108,7 +112,14 @@ namespace PolySport.Controllers
                 OpponentName = match.OpponentName,
                 MatchDate = match.MatchDate,
                 GoalCount = match.Goals.Count,
-                AvailableSeasons = await LoadSeasonsAsync()
+                SelectedPlayerIds = rosterIds,
+                CanEditRoster = !match.HasStarted,
+                RosterNames = match.MatchPlayers
+                    .Select(mp => mp.User!.Username)
+                    .OrderBy(n => n)
+                    .ToList(),
+                AvailableSeasons = await LoadSeasonsAsync(),
+                AvailablePlayers = await LoadPlayersAsync(rosterIds)
             });
         }
 
@@ -120,14 +131,28 @@ namespace PolySport.Controllers
         {
             if (id != viewModel.Id) return NotFound();
 
-            var match = await _context.Matches.FindAsync(id);
+            var match = await _context.Matches
+                .Include(m => m.MatchPlayers)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
             if (match == null) return NotFound();
+
+            // Sobald die Uhr lief, bleibt der Kader unverändert: daran hängen
+            // Einsätze und Tore. Das Formular zeigt ihn dann nur noch an, und
+            // hier wird eine trotzdem mitgeschickte Auswahl ignoriert.
+            var canEditRoster = !match.HasStarted;
+
+            if (canEditRoster)
+                await ValidateRosterAsync(match, viewModel.SelectedPlayerIds);
 
             if (ModelState.IsValid)
             {
                 match.SeasonId = viewModel.SeasonId;
                 match.OpponentName = viewModel.OpponentName;
                 match.MatchDate = viewModel.MatchDate;
+
+                if (canEditRoster)
+                    ApplyRoster(match, viewModel.SelectedPlayerIds);
 
                 await _context.SaveChangesAsync();
 
@@ -136,8 +161,104 @@ namespace PolySport.Controllers
             }
 
             viewModel.GoalCount = await _context.Goals.CountAsync(g => g.MatchId == id);
+            viewModel.CanEditRoster = canEditRoster;
+            viewModel.RosterNames = await _context.MatchPlayers
+                .Where(mp => mp.MatchId == id)
+                .Select(mp => mp.User!.Username)
+                .OrderBy(n => n)
+                .ToListAsync();
             viewModel.AvailableSeasons = await LoadSeasonsAsync();
+            // Auch den bisherigen Kader mitgeben: sonst fehlt ein abgewählter
+            // inaktiver Spieler in der Liste und liesse sich nicht zurückholen.
+            viewModel.AvailablePlayers = await LoadPlayersAsync(
+                (viewModel.SelectedPlayerIds ?? new List<int>())
+                    .Concat(match.MatchPlayers.Select(mp => mp.UserId)));
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Prüft eine neue Kader-Auswahl. Das Formular bietet nur passende
+        /// Spieler an, aber ein manipuliertes Formular könnte jede Id senden.
+        /// Und wer in diesem Match ein Tor oder einen Assist hat, darf nicht
+        /// herausfallen – sonst stünde in der Torfolge jemand, der laut Kader
+        /// nicht dabei war.
+        /// </summary>
+        private async Task ValidateRosterAsync(Match match, List<int>? selectedPlayerIds)
+        {
+            var selected = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
+            var current = match.MatchPlayers.Select(mp => mp.UserId).ToList();
+
+            var allowed = await _context.Players
+                .Where(p => p.IsActive)
+                .Select(p => p.Id)
+                .ToListAsync();
+            allowed.AddRange(current);
+
+            if (selected.Any(pid => !allowed.Contains(pid)))
+            {
+                ModelState.AddModelError(nameof(EditMatchViewModel.SelectedPlayerIds),
+                    "Mindestens einer der gewählten Spieler existiert nicht oder ist nicht aktiv.");
+                return;
+            }
+
+            var removed = current.Where(pid => !selected.Contains(pid)).ToList();
+            if (removed.Count == 0) return;
+
+            // Wenige Tore pro Match, darum bequem im Speicher vergleichen.
+            var involved = await _context.Goals
+                .Where(g => g.MatchId == match.Id)
+                .Select(g => new { g.ScorerId, g.AssistId })
+                .ToListAsync();
+
+            var blocked = removed
+                .Where(pid => involved.Any(g => g.ScorerId == pid || g.AssistId == pid))
+                .ToList();
+
+            if (blocked.Count == 0) return;
+
+            var names = await _context.Players
+                .Where(p => blocked.Contains(p.Id))
+                .OrderBy(p => p.Username)
+                .Select(p => p.Username)
+                .ToListAsync();
+
+            ModelState.AddModelError(nameof(EditMatchViewModel.SelectedPlayerIds),
+                "Aus dem Kader entfernen geht nicht, solange ein Tor oder Assist daran hängt: "
+                + string.Join(", ", names)
+                + ". Lösche das Tor zuerst auf der Detailseite.");
+        }
+
+        /// <summary>Kader auf die Auswahl bringen: Weggefallene raus, neue rein.</summary>
+        private void ApplyRoster(Match match, List<int>? selectedPlayerIds)
+        {
+            var selected = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
+            var current = match.MatchPlayers.Select(mp => mp.UserId).ToList();
+
+            foreach (var gone in match.MatchPlayers.Where(mp => !selected.Contains(mp.UserId)).ToList())
+                _context.MatchPlayers.Remove(gone);
+
+            foreach (var added in selected.Where(pid => !current.Contains(pid)))
+                _context.MatchPlayers.Add(new MatchPlayer { MatchId = match.Id, UserId = added });
+        }
+
+        /// <summary>
+        /// Spieler für die Kader-Auswahl: die aktiven und zusätzlich die, die
+        /// schon im Kader stehen. Ein inzwischen deaktivierter Spieler soll
+        /// nicht verschwinden, nur weil das Formular ihn nicht mehr anbietet.
+        /// </summary>
+        private async Task<List<SelectListItem>> LoadPlayersAsync(IEnumerable<int>? includeIds)
+        {
+            var ids = includeIds?.ToList() ?? new List<int>();
+
+            return await _context.Players
+                .Where(p => p.IsActive || ids.Contains(p.Id))
+                .OrderBy(p => p.Username)
+                .Select(p => new SelectListItem
+                {
+                    Value = p.Id.ToString(),
+                    Text = p.IsActive ? p.Username : p.Username + " (inaktiv)"
+                })
+                .ToListAsync();
         }
 
         /// <summary>Alle Saisons zur Auswahl, aktive zuerst.</summary>
