@@ -12,6 +12,7 @@ darunter Punkte mit `-`.
 - Sobald das 1. Drittel gestartet ist, bleibt der Kader fest und wird nur noch angezeigt: daran hängen Einsätze und Tore
 - Spieler mit einem Tor oder Assist in diesem Match lassen sich nicht aus dem Kader entfernen; das Formular sagt, wer betroffen ist
 - Ein inzwischen inaktiv geschalteter Spieler bleibt im Kader stehen und wird als „(inaktiv)" angezeigt, statt beim Speichern stillschweigend zu verschwinden
+- Neues Symbol in der Browser-Leiste: das Wappen, in 16, 32 und 48 Pixel. Ein bereits geöffneter Tab zeigt unter Umständen noch das alte Zeichen, bis der Browser sein Symbol-Archiv erneuert
 
 ## v1.4.2 – 24.08.2026
 

@@ -21,9 +21,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PolySport</title>
-    @* SVG zuerst; favicon.ico bleibt als Rückfall für ältere Browser *@
-    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
-    <link rel="alternate icon" href="~/favicon.ico" sizes="any" />
+    @* Das Wappen liegt als .ico mit 16, 32 und 48 Pixel vor; der Browser
+       nimmt die passende Grösse. Bewusst kein SVG davor: favicon.svg zeigt
+       noch den alten Entwurf und würde als rel="icon" vorgezogen. *@
+    <link rel="icon" href="~/favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     @* Fremd-Stylesheets (z.B. Select2) gehören hierhin: vor site.css, damit
        unsere Anpassungen sie überschreiben können und nicht umgekehrt. *@
