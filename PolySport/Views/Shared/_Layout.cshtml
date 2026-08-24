@@ -27,7 +27,10 @@
     // Ein Tor wird immer aus einem Match heraus erfasst, darum bleibt
     // dabei der Punkt Matches hervorgehoben.
     var onHome = IsOn("Home", "Index");
-    var onMatches = IsOn("Matches") || IsOn("Goals");
+    // Der Spielplan liegt im Matches-Controller, ist aber ein eigener
+    // Menüpunkt – darum aus onMatches herausnehmen.
+    var onSchedule = IsOn("Matches", "Schedule");
+    var onMatches = (IsOn("Matches") && !onSchedule) || IsOn("Goals");
     var onTopScorer = IsOn("Statistics", "Season");
     var onSheet = IsOn("Statistics", "Sheet");
     var onSeasons = IsOn("Seasons");
@@ -77,6 +80,9 @@
                         {
                             <li class="nav-item">
                                 <a class="@NavClass(onMatches)" aria-current="@Current(onMatches)" asp-area="" asp-controller="Matches" asp-action="Index">Matches</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="@NavClass(onSchedule)" aria-current="@Current(onSchedule)" asp-area="" asp-controller="Matches" asp-action="Schedule">Spielplan</a>
                             </li>
                             <li class="nav-item">
                                 <a class="@NavClass(onTopScorer)" aria-current="@Current(onTopScorer)" asp-area="" asp-controller="Statistics" asp-action="Season">Top-Scorer</a>

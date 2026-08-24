@@ -24,6 +24,14 @@ namespace PolySport.Models
         public DateTime MatchDate { get; set; } = DateTime.Now;
 
         /// <summary>
+        /// Heimspiel (true) oder Auswärtsspiel (false). Null bleibt zulässig:
+        /// Matches aus der Zeit vor diesem Feld haben keine Angabe, und ein
+        /// falsches „Auswärts“ wäre schlechter als eine offene Angabe.
+        /// </summary>
+        [Display(Name = "Heim oder Auswärts")]
+        public bool? IsHomeGame { get; set; }
+
+        /// <summary>
         /// Beendetes Spiel: das Resultat zählt für die Bilanz und es können
         /// keine Tore mehr erfasst werden.
         /// </summary>
@@ -61,6 +69,24 @@ namespace PolySport.Models
 
         [NotMapped]
         public bool HasStarted => CurrentPeriod > 0;
+
+        /// <summary>„Heimspiel“, „Auswärtsspiel“ oder „–“, wenn nichts erfasst ist.</summary>
+        [NotMapped]
+        public string VenueLabel => IsHomeGame switch
+        {
+            true => "Heimspiel",
+            false => "Auswärtsspiel",
+            _ => "–"
+        };
+
+        /// <summary>Kurzform für Tabellen und den Spielplan: H, A oder –.</summary>
+        [NotMapped]
+        public string VenueShort => IsHomeGame switch
+        {
+            true => "H",
+            false => "A",
+            _ => "–"
+        };
 
         /// <summary>Die Uhr läuft gerade.</summary>
         [NotMapped]

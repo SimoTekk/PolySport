@@ -9,10 +9,13 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
     <h2>Match Historie</h2>
-    @if (isAdmin)
-    {
-        <a asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
-    }
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Schedule" class="btn btn-outline-primary">Spielplan</a>
+        @if (isAdmin)
+        {
+            <a asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
+        }
+    </div>
 </div>
 
 @if (Model != null && Model.Any())
@@ -24,6 +27,7 @@
                     <th>Datum</th>
                     <th>Saison</th>
                     <th>Gegner</th>
+                    <th class="text-center" title="Heim oder Auswärts">H/A</th>
                     <th class="text-center">Resultat</th>
                     <th>Status</th>
                     <th class="text-end">Aktion</th>
@@ -36,6 +40,7 @@
                         <td><strong>@item.MatchDate.ToString("dd.MM.yyyy HH:mm")</strong></td>
                         <td>@item.Season?.Name</td>
                         <td>@item.OpponentName</td>
+                        <td class="text-center" title="@item.VenueLabel">@item.VenueShort</td>
                         <td class="text-center fw-bold">@item.OurScore : @item.OpponentScore</td>
                         <td>
                             @if (item.IsFinished)

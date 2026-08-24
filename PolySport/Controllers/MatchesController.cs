@@ -54,7 +54,8 @@ namespace PolySport.Controllers
                 {
                     SeasonId = viewModel.SeasonId,
                     OpponentName = viewModel.OpponentName,
-                    MatchDate = viewModel.MatchDate
+                    MatchDate = viewModel.MatchDate,
+                    IsHomeGame = viewModel.IsHomeGame
                 };
 
                 _context.Matches.Add(match);
@@ -89,6 +90,75 @@ namespace PolySport.Controllers
             return View(viewModel);
         }
 
+        // GET: Matches/Schedule/5 – Spielplan einer Saison
+        public async Task<IActionResult> Schedule(int? id)
+        {
+            // Wie bei den Auswertungen: ohne Angabe die aktive Saison.
+            var season = id.HasValue
+                ? await _context.Seasons.FindAsync(id)
+                : await _context.Seasons.FirstOrDefaultAsync(s => s.IsActive);
+
+            var viewModel = new ScheduleViewModel
+            {
+                AvailableSeasons = await _context.Seasons
+                    .OrderByDescending(s => s.IsActive)
+                    .ThenBy(s => s.Name)
+                    .Select(s => new SeasonOption { Id = s.Id, Name = s.Name, IsActive = s.IsActive })
+                    .ToListAsync()
+            };
+
+            // Keine Saison da oder gewählt: leerer Spielplan mit Auswahl,
+            // damit die Seite bedienbar bleibt statt 404 zu liefern.
+            if (season == null)
+                return View(viewModel);
+
+            viewModel.SeasonId = season.Id;
+            viewModel.SeasonName = season.Name;
+
+            var matches = await _context.Matches
+                .Include(m => m.Goals)
+                .Where(m => m.SeasonId == season.Id)
+                .ToListAsync();
+
+            viewModel.HomeGames = matches.Count(m => m.IsHomeGame == true);
+            viewModel.AwayGames = matches.Count(m => m.IsHomeGame == false);
+            viewModel.VenueUnknown = matches.Count(m => m.IsHomeGame == null);
+
+            // Kommend: alles, was nicht beendet ist – auch ein laufendes Spiel
+            // gehört nach oben, dort schaut man beim Öffnen zuerst hin.
+            viewModel.Upcoming = matches
+                .Where(m => !m.IsFinished)
+                .OrderBy(m => m.MatchDate)
+                .ThenBy(m => m.Id)
+                .Select(ToEntry)
+                .ToList();
+
+            viewModel.Played = matches
+                .Where(m => m.IsFinished)
+                .OrderByDescending(m => m.MatchDate)
+                .ThenByDescending(m => m.Id)
+                .Select(ToEntry)
+                .ToList();
+
+            return View(viewModel);
+        }
+
+        private static ScheduleEntry ToEntry(Match match) => new ScheduleEntry
+        {
+            Id = match.Id,
+            MatchDate = match.MatchDate,
+            OpponentName = match.OpponentName,
+            IsHomeGame = match.IsHomeGame,
+            VenueLabel = match.VenueLabel,
+            VenueShort = match.VenueShort,
+            IsFinished = match.IsFinished,
+            HasStarted = match.HasStarted,
+            IsPeriodRunning = match.IsPeriodRunning,
+            StatusLabel = match.StatusLabel,
+            OurScore = match.OurScore,
+            OpponentScore = match.OpponentScore
+        };
+
         // GET: Matches/Edit/5 – Stammdaten ändern (Saison, Gegner, Datum, Kader)
         [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit(int? id)
@@ -111,6 +181,7 @@ namespace PolySport.Controllers
                 SeasonId = match.SeasonId,
                 OpponentName = match.OpponentName,
                 MatchDate = match.MatchDate,
+                IsHomeGame = match.IsHomeGame,
                 GoalCount = match.Goals.Count,
                 SelectedPlayerIds = rosterIds,
                 CanEditRoster = !match.HasStarted,
@@ -150,6 +221,7 @@ namespace PolySport.Controllers
                 match.SeasonId = viewModel.SeasonId;
                 match.OpponentName = viewModel.OpponentName;
                 match.MatchDate = viewModel.MatchDate;
+                match.IsHomeGame = viewModel.IsHomeGame;
 
                 if (canEditRoster)
                     ApplyRoster(match, viewModel.SelectedPlayerIds);
@@ -299,6 +371,8 @@ namespace PolySport.Controllers
                 SeasonName = match.Season?.Name ?? "Unbekannte Saison",
                 OpponentName = match.OpponentName,
                 MatchDate = match.MatchDate,
+                VenueLabel = match.VenueLabel,
+                IsHomeGame = match.IsHomeGame,
                 OurScore = match.OurScore,
                 OpponentScore = match.OpponentScore,
                 IsFinished = match.IsFinished,

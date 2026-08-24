@@ -7,6 +7,10 @@ namespace PolySport.Models.ViewModels
         public string OpponentName { get; set; } = string.Empty;
         public DateTime MatchDate { get; set; }
 
+        /// <summary>„Heimspiel“, „Auswärtsspiel“ oder „–“.</summary>
+        public string VenueLabel { get; set; } = "–";
+        public bool? IsHomeGame { get; set; }
+
         // Beide Resultate werden aus den Tor-Datensätzen gezählt
         public int OurScore { get; set; }
         public int OpponentScore { get; set; }

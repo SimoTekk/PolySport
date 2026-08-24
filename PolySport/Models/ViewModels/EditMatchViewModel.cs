@@ -26,6 +26,10 @@ namespace PolySport.Models.ViewModels
         [DataType(DataType.DateTime)]
         public DateTime MatchDate { get; set; }
 
+        /// <summary>Null = keine Angabe. Siehe Match.IsHomeGame.</summary>
+        [Display(Name = "Heim oder Auswärts")]
+        public bool? IsHomeGame { get; set; }
+
         /// <summary>
         /// Bewusst nullable: sonst hängt Identity... bzw. die Validierung eine
         /// implizite Pflichtregel daran, und ein absichtlich leerer Kader liesse

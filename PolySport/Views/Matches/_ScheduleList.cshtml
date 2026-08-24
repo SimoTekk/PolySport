@@ -1,0 +1,49 @@
+@model List<PolySport.Models.ViewModels.ScheduleEntry>
+
+@* Eine Gruppe je Monat. Die Liste wird von Schedule.cshtml zweimal
+   verwendet, für die kommenden und für die gespielten Matches. *@
+@foreach (var group in Model.GroupBy(e => e.MonthLabel))
+{
+    <h6 class="text-muted mt-3 mb-2">@group.Key</h6>
+    <div class="list-group shadow-sm mb-2">
+        @foreach (var entry in group)
+        {
+            <a asp-action="Details" asp-route-id="@entry.Id"
+               class="list-group-item list-group-item-action d-flex flex-wrap align-items-center gap-2">
+
+                <span class="font-monospace text-muted" style="min-width: 7.5rem;">
+                    @entry.DayLabel @entry.MatchDate.ToString("dd.MM.")
+                    <span class="ms-1">@entry.MatchDate.ToString("HH:mm")</span>
+                </span>
+
+                <span class="badge @(entry.IsHomeGame == true ? "bg-primary" : entry.IsHomeGame == false ? "bg-secondary" : "bg-light text-muted")"
+                      title="@entry.VenueLabel" style="min-width: 2rem;">
+                    @entry.VenueShort
+                </span>
+
+                <span class="flex-grow-1 fw-semibold">@entry.OpponentName</span>
+
+                @if (entry.IsFinished)
+                {
+                    <span class="font-monospace fw-bold" style="min-width: 3.5rem;">
+                        @entry.OurScore : @entry.OpponentScore
+                    </span>
+                    <span class="badge @(entry.ResultLabel == "Sieg" ? "bg-success" : entry.ResultLabel == "Niederlage" ? "bg-danger" : "bg-secondary")">
+                        @entry.ResultLabel
+                    </span>
+                }
+                else if (entry.HasStarted)
+                {
+                    <span class="font-monospace fw-bold" style="min-width: 3.5rem;">
+                        @entry.OurScore : @entry.OpponentScore
+                    </span>
+                    <span class="badge @(entry.IsPeriodRunning ? "bg-success" : "bg-secondary")">@entry.StatusLabel</span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-muted">@entry.StatusLabel</span>
+                }
+            </a>
+        }
+    </div>
+}

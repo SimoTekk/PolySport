@@ -1,0 +1,86 @@
+@model PolySport.Models.ViewModels.ScheduleViewModel
+@{
+    ViewData["Title"] = "Spielplan";
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3 mt-3">
+    <div>
+        <h2 class="mb-0">Spielplan</h2>
+        @if (Model.AvailableSeasons.Any() && Model.SeasonId > 0)
+        {
+            <span class="text-muted">
+                Saison @Model.SeasonName – @Model.MatchesTotal Match@(Model.MatchesTotal == 1 ? "" : "es")
+                @if (Model.HomeGames > 0 || Model.AwayGames > 0)
+                {
+                    <span>, @Model.HomeGames heim / @Model.AwayGames auswärts</span>
+                    @if (Model.VenueUnknown > 0)
+                    {
+                        <span>, @Model.VenueUnknown ohne Angabe</span>
+                    }
+                }
+            </span>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap align-items-end gap-2">
+        @if (Model.AvailableSeasons.Any())
+        {
+            <form asp-action="Schedule" method="get" class="d-flex align-items-end gap-2">
+                <div>
+                    <label for="seasonSelect" class="form-label mb-1 small text-muted">Saison</label>
+                    <select id="seasonSelect" name="id" class="form-select form-select-sm">
+                        @foreach (var season in Model.AvailableSeasons)
+                        {
+                            <option value="@season.Id" selected="@(season.Id == Model.SeasonId)">
+                                @season.Name@(season.IsActive ? " (aktiv)" : "")
+                            </option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Anzeigen</button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-sm btn-outline-primary">Match-Historie</a>
+        @if (isAdmin)
+        {
+            <a asp-action="Create" class="btn btn-sm btn-primary">Neues Match anlegen</a>
+        }
+    </div>
+</div>
+
+@if (!Model.AvailableSeasons.Any())
+{
+    <div class="alert alert-warning">
+        Es gibt noch keine Saison. Lege unter <a asp-controller="Seasons" asp-action="Index">Saisons</a>
+        eine an, dann können Matches erfasst werden.
+    </div>
+}
+else if (Model.MatchesTotal == 0)
+{
+    <div class="alert alert-info">Für diese Saison ist noch kein Match erfasst.</div>
+}
+else
+{
+    @* Zwei Blöcke statt eines Monatsgitters: was als Nächstes kommt, steht
+       oben und ist der häufigste Grund, diese Seite zu öffnen. *@
+    <h5 class="text-uppercase small text-muted mt-4">Kommend</h5>
+    @if (Model.Upcoming.Any())
+    {
+        <partial name="_ScheduleList" model="Model.Upcoming" />
+    }
+    else
+    {
+        <p class="text-muted">Alle Matches dieser Saison sind gespielt.</p>
+    }
+
+    <h5 class="text-uppercase small text-muted mt-5">Gespielt</h5>
+    @if (Model.Played.Any())
+    {
+        <partial name="_ScheduleList" model="Model.Played" />
+    }
+    else
+    {
+        <p class="text-muted">Noch kein Match beendet.</p>
+    }
+}

@@ -17,6 +17,10 @@ namespace PolySport.Models.ViewModels
         [Display(Name = "Spieldatum")]
         public DateTime MatchDate { get; set; } = DateTime.Now;
 
+        /// <summary>Null = keine Angabe. Siehe Match.IsHomeGame.</summary>
+        [Display(Name = "Heim oder Auswärts")]
+        public bool? IsHomeGame { get; set; }
+
         // Hier speichern wir die IDs der Spieler, die der Admin im Formular anhakt
         [Display(Name = "Spieler im Kader")]
         public List<int> SelectedPlayerIds { get; set; } = new List<int>();

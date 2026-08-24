@@ -8,6 +8,9 @@ darunter Punkte mit `-`.
 
 ## v1.5.2 – 24.08.2026
 
+- **Spielplan**: neue Seite mit allen Terminen einer Saison – kommende Matches oben, gespielte darunter, nach Monat gruppiert. Ein Klick führt zum Match. Erreichbar über den Menüpunkt „Spielplan“
+- **Heim oder Auswärts**: ein Match lässt sich als Heim- oder Auswärtsspiel erfassen, sichtbar auf der Detailseite, in der Match-Historie und im Spielplan. Der Kopf des Spielplans zählt beides zusammen. Bereits erfasste Matches bleiben ohne Angabe und lassen sich über „Match bearbeiten“ nachtragen
+- Die Dashboard-Kachel behauptet nicht mehr „läuft“, wenn das nächste Match noch nicht angepfiffen ist. Sie zeigt jetzt denselben Zustand wie die Match-Detailseite – „Nicht gestartet“, „1. Drittel läuft“ oder „Pause nach dem 1. Drittel“ – und heißt vor dem Anpfiff „Nächstes Match“
 - Die Bedienelemente oben rechts sind auf Deutsch: „Anmelden“, „Registrieren“, „Abmelden“ und „Hallo …“ statt der englischen Vorgaben
 - Auf der Match-Detailseite steht „PolySport“ in derselben Schreibweise wie in der Menüleiste
 

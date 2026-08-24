@@ -36,6 +36,16 @@
                 <span asp-validation-for="MatchDate" class="text-danger"></span>
             </div>
 
+            <div class="form-group mb-3">
+                <label asp-for="IsHomeGame" class="control-label"></label>
+                <select asp-for="IsHomeGame" class="form-select">
+                    <option value="">-- keine Angabe --</option>
+                    <option value="true">Heimspiel</option>
+                    <option value="false">Auswärtsspiel</option>
+                </select>
+                <span asp-validation-for="IsHomeGame" class="text-danger"></span>
+            </div>
+
             <div class="form-group mb-4">
                 <label asp-for="SelectedPlayerIds" class="control-label">Spieler im Kader (Tippen zum Suchen)</label>
                 <select asp-for="SelectedPlayerIds" class="form-control select2-multiple" asp-items="Model.AvailablePlayers" multiple="multiple">

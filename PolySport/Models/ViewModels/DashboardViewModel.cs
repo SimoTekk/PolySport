@@ -41,6 +41,14 @@ namespace PolySport.Models.ViewModels
         public int OpponentScore { get; set; }
         public bool IsFinished { get; set; }
 
+        /// <summary>
+        /// Zustand der Spieluhr, damit die Kachel nicht „läuft“ behauptet,
+        /// solange das Spiel noch gar nicht angepfiffen ist.
+        /// </summary>
+        public bool HasStarted { get; set; }
+        public bool IsPeriodRunning { get; set; }
+        public string StatusLabel { get; set; } = string.Empty;
+
         public string ResultLabel => OurScore > OpponentScore ? "Sieg"
                                    : OurScore < OpponentScore ? "Niederlage"
                                    : "Unentschieden";

@@ -95,7 +95,10 @@ namespace PolySport.Controllers
             MatchDate = match.MatchDate,
             OurScore = match.OurScore,
             OpponentScore = match.OpponentScore,
-            IsFinished = match.IsFinished
+            IsFinished = match.IsFinished,
+            HasStarted = match.HasStarted,
+            IsPeriodRunning = match.IsPeriodRunning,
+            StatusLabel = match.StatusLabel
         };
 
         private async Task<List<PlayerStatViewModel>> BuildTopScorersAsync(int seasonId)
