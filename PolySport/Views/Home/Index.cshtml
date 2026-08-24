@@ -5,18 +5,8 @@
     var isAdmin = User.IsInRole(AppRoles.Admin);
 }
 
-@if (!isAuthenticated)
-{
-    <div class="text-center py-5">
-        <h1 class="display-4">PolySport</h1>
-        <p class="lead">Matches, Tore und Statistiken für unser Team.</p>
-        <p class="text-muted">Melde dich an, um die Spiele und Auswertungen zu sehen.</p>
-        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary btn-lg">Anmelden</a>
-        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-secondary btn-lg ms-2">Registrieren</a>
-    </div>
-}
-else
-{
+@* Die Kennzahlen sind offen. Ohne Anmeldung fehlen nur die Schaltflächen,
+   die auf geschützte Seiten führen – dort käme sonst die Anmeldemaske. *@
 <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
     <div>
         <h2 class="mb-0">Dashboard</h2>
@@ -33,12 +23,29 @@ else
     }
 </div>
 
+@if (!isAuthenticated)
+{
+    <p class="text-muted">
+        Matches, Torfolgen und die vollständige Auswertung gibt es nach der
+        Anmeldung – oben rechts, dort geht auch die Registrierung.
+    </p>
+}
+
 @if (!Model.HasActiveSeason)
 {
-    <div class="alert alert-warning">
-        Es ist keine Saison aktiv. Setze unter <a asp-controller="Seasons" asp-action="Index">Saisons</a>
-        eine Saison auf aktiv, damit Matches erfasst und ausgewertet werden können.
-    </div>
+    @if (isAuthenticated)
+    {
+        <div class="alert alert-warning">
+            Es ist keine Saison aktiv. Setze unter <a asp-controller="Seasons" asp-action="Index">Saisons</a>
+            eine Saison auf aktiv, damit Matches erfasst und ausgewertet werden können.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary">
+            Zurzeit ist keine Saison aktiv, darum gibt es noch keine Zahlen zu zeigen.
+        </div>
+    }
 }
 else
 {
@@ -101,8 +108,11 @@ else
                         <h4 class="card-title mb-1">gegen @Model.OpenMatch.OpponentName</h4>
                         <p class="text-muted">@Model.OpenMatch.MatchDate.ToString("dd.MM.yyyy HH:mm")</p>
                         <p class="display-6 mb-3">@Model.OpenMatch.OurScore : @Model.OpenMatch.OpponentScore</p>
-                        <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.OpenMatch.Id"
-                           class="btn btn-primary">Zum Match</a>
+                        @if (isAuthenticated)
+                        {
+                            <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.OpenMatch.Id"
+                               class="btn btn-primary">Zum Match</a>
+                        }
                     </div>
                 </div>
             </div>
@@ -124,8 +134,11 @@ else
                             }
                             <span class="badge @resultClass">@Model.LastMatch.ResultLabel</span>
                         </p>
-                        <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.LastMatch.Id"
-                           class="btn btn-outline-primary">Details</a>
+                        @if (isAuthenticated)
+                        {
+                            <a asp-controller="Matches" asp-action="Details" asp-route-id="@Model.LastMatch.Id"
+                               class="btn btn-outline-primary">Details</a>
+                        }
                     </div>
                 </div>
             </div>
@@ -135,7 +148,10 @@ else
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>Top-Scorer</span>
-                    <a asp-controller="Statistics" asp-action="Season" class="small">alle anzeigen</a>
+                    @if (isAuthenticated)
+                    {
+                        <a asp-controller="Statistics" asp-action="Season" class="small">alle anzeigen</a>
+                    }
                 </div>
                 @if (Model.TopScorers.Any())
                 {
@@ -161,21 +177,23 @@ else
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">Schnellzugriff</div>
-                <div class="card-body d-flex flex-column gap-2">
-                    <a asp-controller="Matches" asp-action="Index" class="btn btn-outline-primary">Match-Historie</a>
-                    <a asp-controller="Statistics" asp-action="Season" class="btn btn-outline-primary">Statistik &amp; Auswertung</a>
-                    <a asp-controller="Statistics" asp-action="Sheet" class="btn btn-outline-primary">Saisonblatt</a>
-                    @if (isAdmin)
-                    {
-                        <a asp-controller="Matches" asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
-                    }
+        @if (isAuthenticated)
+        {
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">Schnellzugriff</div>
+                    <div class="card-body d-flex flex-column gap-2">
+                        <a asp-controller="Matches" asp-action="Index" class="btn btn-outline-primary">Match-Historie</a>
+                        <a asp-controller="Statistics" asp-action="Season" class="btn btn-outline-primary">Statistik &amp; Auswertung</a>
+                        <a asp-controller="Statistics" asp-action="Sheet" class="btn btn-outline-primary">Saisonblatt</a>
+                        @if (isAdmin)
+                        {
+                            <a asp-controller="Matches" asp-action="Create" class="btn btn-primary">Neues Match anlegen</a>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
+        }
 
     </div>
-}
 }

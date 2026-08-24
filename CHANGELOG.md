@@ -8,6 +8,7 @@ darunter Punkte mit `-`.
 
 ## v1.5.1 – 24.08.2026
 
+- **Dashboard ohne Anmeldung**: die Kennzahlen der aktiven Saison sind jetzt offen einsehbar – Bilanz, Torverhältnis, Spiele, Kaderstärke, letztes Resultat, offenes Match und die drei besten Scorer. Matches, Torfolgen und die vollständige Auswertung bleiben angemeldeten Mitgliedern vorbehalten
 - Die Menüleiste hebt jetzt die aufgerufene Seite hervor. Bisher war „Matches“ dauerhaft blau, unabhängig davon, wo man sich befand
 - Beim Erfassen eines Tores bleibt „Matches“ hervorgehoben, weil das aus einem Match heraus geschieht
 - Auf der Match-Detailseite steht neben dem Spielstand der Mannschaftsname statt „WIR“

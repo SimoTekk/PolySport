@@ -26,10 +26,9 @@ namespace PolySport.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // Nicht angemeldete Besucher sehen nur die Begrüssung
-            if (User.Identity?.IsAuthenticated != true)
-                return View(new DashboardViewModel());
-
+            // Das Dashboard ist offen: die Kennzahlen der aktiven Saison sieht
+            // jeder Besucher. Die Ansicht lässt für Nichtangemeldete nur die
+            // Schaltflächen weg, die auf geschützte Seiten führen.
             var season = await _context.Seasons.FirstOrDefaultAsync(s => s.IsActive);
 
             var viewModel = new DashboardViewModel
