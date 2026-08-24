@@ -6,6 +6,11 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.5.2 – 24.08.2026
+
+- Die Bedienelemente oben rechts sind auf Deutsch: „Anmelden“, „Registrieren“, „Abmelden“ und „Hallo …“ statt der englischen Vorgaben
+- Auf der Match-Detailseite steht „PolySport“ in derselben Schreibweise wie in der Menüleiste
+
 ## v1.5.1 – 24.08.2026
 
 - **Dashboard ohne Anmeldung**: die Kennzahlen der aktiven Saison sind jetzt offen einsehbar – Bilanz, Torverhältnis, Spiele, Kaderstärke, letztes Resultat, offenes Match und die drei besten Scorer. Matches, Torfolgen und die vollständige Auswertung bleiben angemeldeten Mitgliedern vorbehalten
