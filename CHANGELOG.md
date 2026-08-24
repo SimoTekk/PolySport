@@ -6,6 +6,12 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.5.1 – 24.08.2026
+
+- Die Menüleiste hebt jetzt die aufgerufene Seite hervor. Bisher war „Matches“ dauerhaft blau, unabhängig davon, wo man sich befand
+- Beim Erfassen eines Tores bleibt „Matches“ hervorgehoben, weil das aus einem Match heraus geschieht
+- Auf der Match-Detailseite steht neben dem Spielstand der Mannschaftsname statt „WIR“
+
 ## v1.5.0 – 24.08.2026
 
 - **Kader nachträglich anpassen**: solange ein Match nicht gestartet ist, lässt sich der Kader unter „Match bearbeiten" ändern – vergessene Spieler nachtragen oder kurzfristige Absagen austragen, ohne das Match neu anzulegen

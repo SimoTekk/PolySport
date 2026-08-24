@@ -14,6 +14,30 @@
     // damit der Seitenaufbau nicht auf GitHub warten muss.
     var updateInfo = isAdmin ? UpdateService.Cached : null;
     var updateAvailable = updateInfo?.IsUpdateAvailable == true;
+
+    // Aktive Seite in der Menüleiste hervorheben. Der Controller allein
+    // genügt nicht: Top-Scorer und Saisonblatt teilen sich Statistics,
+    // darum entscheidet dort zusätzlich die Aktion.
+    var routeController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var routeAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    bool IsOn(string controller, string? action = null) =>
+        routeController == controller && (action is null || routeAction == action);
+
+    // Ein Tor wird immer aus einem Match heraus erfasst, darum bleibt
+    // dabei der Punkt Matches hervorgehoben.
+    var onHome = IsOn("Home", "Index");
+    var onMatches = IsOn("Matches") || IsOn("Goals");
+    var onTopScorer = IsOn("Statistics", "Season");
+    var onSheet = IsOn("Statistics", "Sheet");
+    var onSeasons = IsOn("Seasons");
+    var onPlayers = IsOn("Players");
+    var onUsers = IsOn("Users");
+    var onUpdate = IsOn("Update");
+
+    // Hervorhebung wie bisher bei Matches: fett und blau.
+    string NavClass(bool active) => active ? "nav-link active fw-bold text-primary" : "nav-link";
+    string? Current(bool active) => active ? "page" : null;
 }
 <!DOCTYPE html>
 <html lang="de" data-bs-theme="light">
@@ -47,30 +71,30 @@
 
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="@NavClass(onHome)" aria-current="@Current(onHome)" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         @if (isAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link fw-bold text-primary" asp-area="" asp-controller="Matches" asp-action="Index">Matches</a>
+                                <a class="@NavClass(onMatches)" aria-current="@Current(onMatches)" asp-area="" asp-controller="Matches" asp-action="Index">Matches</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Statistics" asp-action="Season">Top-Scorer</a>
+                                <a class="@NavClass(onTopScorer)" aria-current="@Current(onTopScorer)" asp-area="" asp-controller="Statistics" asp-action="Season">Top-Scorer</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Statistics" asp-action="Sheet">Saisonblatt</a>
+                                <a class="@NavClass(onSheet)" aria-current="@Current(onSheet)" asp-area="" asp-controller="Statistics" asp-action="Sheet">Saisonblatt</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Seasons" asp-action="Index">Saisons</a>
+                                <a class="@NavClass(onSeasons)" aria-current="@Current(onSeasons)" asp-area="" asp-controller="Seasons" asp-action="Index">Saisons</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Players" asp-action="Index">Spieler</a>
+                                <a class="@NavClass(onPlayers)" aria-current="@Current(onPlayers)" asp-area="" asp-controller="Players" asp-action="Index">Spieler</a>
                             </li>
                         }
                         @if (isAdmin)
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Users" asp-action="Index">
+                                <a class="@NavClass(onUsers)" aria-current="@Current(onUsers)" asp-area="" asp-controller="Users" asp-action="Index">
                                     Benutzer
                                     @if (pendingApprovals > 0)
                                     {
@@ -81,7 +105,7 @@
                             @if (updateAvailable)
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="Update" asp-action="Index">
+                                    <a class="@NavClass(onUpdate)" aria-current="@Current(onUpdate)" asp-area="" asp-controller="Update" asp-action="Index">
                                         Update
                                         <span class="badge bg-warning text-dark rounded-pill">@updateInfo!.LatestVersion</span>
                                     </a>
