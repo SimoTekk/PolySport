@@ -121,7 +121,7 @@ namespace PolySport.Controllers
 
             var rosterEntries = await _context.MatchPlayers
                 .Where(mp => matchIds.Contains(mp.MatchId))
-                .Select(mp => new { mp.MatchId, mp.UserId })
+                .Select(mp => new { mp.MatchId, mp.UserId, mp.IsGoalkeeper })
                 .ToListAsync();
 
             var allGoals = matches.SelectMany(m => m.Goals).Where(g => !g.IsOpponentGoal).ToList();
@@ -140,6 +140,11 @@ namespace PolySport.Controllers
 
             // Nachschlagewerke, damit die Matrix ohne verschachtelte Suchen entsteht
             var rosterLookup = rosterEntries
+                .Select(r => (r.MatchId, r.UserId))
+                .ToHashSet();
+
+            var goalieLookup = rosterEntries
+                .Where(r => r.IsGoalkeeper)
                 .Select(r => (r.MatchId, r.UserId))
                 .ToHashSet();
 
@@ -171,6 +176,8 @@ namespace PolySport.Controllers
                 Cells = matches.Select(m => new SheetCell
                 {
                     WasInRoster = rosterLookup.Contains((m.Id, player.Id)),
+                    MatchIsFinished = m.IsFinished,
+                    WasGoalkeeper = goalieLookup.Contains((m.Id, player.Id)),
                     Goals = goalsPerPlayerMatch.TryGetValue((m.Id, player.Id), out var g) ? g : 0,
                     Assists = assistsPerPlayerMatch.TryGetValue((m.Id, player.Id), out var a) ? a : 0
                 }).ToList()

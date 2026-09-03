@@ -16,7 +16,7 @@
                     <span class="ms-1">@entry.MatchDate.ToString("HH:mm")</span>
                 </span>
 
-                <span class="badge @(entry.IsHomeGame == true ? "bg-primary" : entry.IsHomeGame == false ? "bg-secondary" : "bg-light text-muted")"
+                <span class="badge @(entry.IsHomeGame == true ? "bg-primary" : entry.IsHomeGame == false ? "bg-secondary" : "bg-secondary-subtle text-body-secondary border")"
                       title="@entry.VenueLabel" style="min-width: 2rem;">
                     @entry.VenueShort
                 </span>
@@ -41,7 +41,7 @@
                 }
                 else
                 {
-                    <span class="badge bg-light text-muted">@entry.StatusLabel</span>
+                    <span class="badge bg-secondary-subtle text-body-secondary border">@entry.StatusLabel</span>
                 }
             </a>
         }

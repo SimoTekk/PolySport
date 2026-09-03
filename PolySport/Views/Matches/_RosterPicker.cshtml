@@ -1,0 +1,57 @@
+@model PolySport.Models.ViewModels.RosterPickerViewModel
+
+@* Kaderauswahl ohne Dropdown: alle Spieler stehen als Ankreuzliste da. So
+   bleibt beim Zusammenstellen sichtbar, wer schon dabei ist – ein Dropdown
+   klappte nach jeder Auswahl zu. Das Suchfeld blendet nur Zeilen aus,
+   gesetzte Haken bleiben erhalten. *@
+<div class="roster-picker" data-roster-picker>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <input type="search" class="form-control form-control-sm" style="max-width: 14rem;"
+               placeholder="Spieler suchen…" aria-label="Spieler suchen"
+               autocomplete="off" data-roster-filter />
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-roster-all>Alle</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-roster-none>Keine</button>
+        <span class="small text-muted ms-auto"><span data-roster-count>0</span> ausgewählt</span>
+    </div>
+
+    <div class="roster-picker__list border rounded p-2">
+        @if (!Model.Players.Any())
+        {
+            <div class="text-muted small">Es sind noch keine Spieler erfasst.</div>
+        }
+        @foreach (var player in Model.Players)
+        {
+            var inputId = $"rosterPlayer_{player.Id}";
+            <div class="form-check" data-roster-item data-roster-name="@player.Name.ToLowerInvariant()">
+                <input class="form-check-input" type="checkbox" name="SelectedPlayerIds"
+                       value="@player.Id" id="@inputId"
+                       checked="@Model.SelectedPlayerIds.Contains(player.Id)" data-roster-check />
+                <label class="form-check-label" for="@inputId">
+                    @player.Name
+                    @if (!player.IsActive)
+                    {
+                        <span class="badge bg-secondary ms-1">inaktiv</span>
+                    }
+                </label>
+            </div>
+        }
+        <div class="text-muted small d-none" data-roster-empty>Kein Spieler passt zur Suche.</div>
+    </div>
+
+    <div class="mt-3">
+        <label for="GoalkeeperId" class="form-label">Torhüter</label>
+        <select name="GoalkeeperId" id="GoalkeeperId" class="form-select" data-roster-goalie>
+            <option value="">-- kein Torhüter erfasst --</option>
+            @foreach (var player in Model.Players)
+            {
+                <option value="@player.Id" selected="@(Model.GoalkeeperId == player.Id)">@player.Name</option>
+            }
+        </select>
+        <div class="form-text">
+            Wer im Tor steht. Auch ein Feldspieler kann hier gewählt werden –
+            so bleibt später nachvollziehbar, wer bei Torhütermangel eingesprungen
+            ist. Der Torhüter wird automatisch in den Kader übernommen.
+        </div>
+    </div>
+</div>

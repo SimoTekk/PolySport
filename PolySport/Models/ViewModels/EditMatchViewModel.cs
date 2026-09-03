@@ -38,6 +38,10 @@ namespace PolySport.Models.ViewModels
         [Display(Name = "Spieler im Kader")]
         public List<int>? SelectedPlayerIds { get; set; } = new List<int>();
 
+        /// <summary>Wer im Tor steht. Null = keine Angabe.</summary>
+        [Display(Name = "Torhüter")]
+        public int? GoalkeeperId { get; set; }
+
         /// <summary>Alle Saisons, nicht nur die aktive – ein Match darf verschoben werden.</summary>
         public IEnumerable<SelectListItem>? AvailableSeasons { get; set; }
 
@@ -46,13 +50,30 @@ namespace PolySport.Models.ViewModels
         /// im Kader stehen – sonst würde ein inzwischen deaktivierter Spieler
         /// beim Speichern unbemerkt aus dem Kader fallen.
         /// </summary>
-        public IEnumerable<SelectListItem>? AvailablePlayers { get; set; }
+        public List<RosterPlayerOption> RosterOptions { get; set; } = new List<RosterPlayerOption>();
+
+        /// <summary>Zusammengefasst für die geteilte Teilansicht _RosterPicker.</summary>
+        public RosterPickerViewModel Picker => new RosterPickerViewModel
+        {
+            Players = RosterOptions,
+            SelectedPlayerIds = SelectedPlayerIds ?? new List<int>(),
+            GoalkeeperId = GoalkeeperId
+        };
 
         /// <summary>Match noch nicht gestartet – nur dann ist der Kader offen.</summary>
         public bool CanEditRoster { get; set; }
 
+        /// <summary>
+        /// Löschen ist möglich, solange die Uhr nie lief und kein Tor daran
+        /// hängt – dann ist das Match nur ein Termin.
+        /// </summary>
+        public bool CanDelete { get; set; }
+
         /// <summary>Nur zur Anzeige, wenn der Kader gesperrt ist.</summary>
         public List<string> RosterNames { get; set; } = new List<string>();
+
+        /// <summary>Nur zur Anzeige, wenn der Kader gesperrt ist.</summary>
+        public string? GoalkeeperName { get; set; }
 
         /// <summary>Nur zur Anzeige: wie viele Tore hängen daran.</summary>
         public int GoalCount { get; set; }

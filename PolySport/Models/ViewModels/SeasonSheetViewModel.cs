@@ -53,7 +53,16 @@ namespace PolySport.Models.ViewModels
         public int TotalGoals => Cells.Sum(c => c.Goals);
         public int TotalAssists => Cells.Sum(c => c.Assists);
         public int TotalPoints => TotalGoals + TotalAssists;
-        public int MatchesPlayed => Cells.Count(c => c.WasInRoster);
+
+        /// <summary>
+        /// Einsätze: nur beendete Matches werden gezählt. Ein Kadereintrag für
+        /// ein noch nicht gespieltes Match ist eine Planung, kein Einsatz –
+        /// sonst hätte am Saisonanfang jeder so viele Einsätze wie Termine.
+        /// </summary>
+        public int MatchesPlayed => Cells.Count(c => c.CountsAsAppearance);
+
+        /// <summary>Von diesen Einsätzen im Tor – siehe SheetCell.WasGoalkeeper.</summary>
+        public int GoalkeeperMatches => Cells.Count(c => c.CountsAsAppearance && c.WasGoalkeeper);
     }
 
     public class SheetCell
@@ -63,6 +72,18 @@ namespace PolySport.Models.ViewModels
         /// Zelle leer dargestellt – "nicht dabei" ist etwas anderes als "0 Punkte".
         /// </summary>
         public bool WasInRoster { get; set; }
+
+        /// <summary>Match beendet – erst dann zählt der Kadereintrag als Einsatz.</summary>
+        public bool MatchIsFinished { get; set; }
+
+        /// <summary>
+        /// Dieser Spieler stand in diesem Match im Tor. Damit lässt sich
+        /// nachvollziehen, wer bei Torhütermangel eingesprungen ist.
+        /// </summary>
+        public bool WasGoalkeeper { get; set; }
+
+        /// <summary>Im Kader und Match beendet.</summary>
+        public bool CountsAsAppearance => WasInRoster && MatchIsFinished;
 
         public int Goals { get; set; }
         public int Assists { get; set; }

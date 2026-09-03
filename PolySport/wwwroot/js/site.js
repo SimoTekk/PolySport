@@ -52,6 +52,130 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     }
 
+    // --- Kaderauswahl (Match anlegen / bearbeiten) ---
+    // Ankreuzliste statt Dropdown: das Suchfeld blendet nur Zeilen aus,
+    // gesetzte Haken bleiben dabei erhalten.
+    var picker = document.querySelector('[data-roster-picker]');
+    if (picker) {
+        var items = Array.prototype.slice.call(picker.querySelectorAll('[data-roster-item]'));
+        var boxes = Array.prototype.slice.call(picker.querySelectorAll('[data-roster-check]'));
+        var counter = picker.querySelector('[data-roster-count]');
+        var emptyHint = picker.querySelector('[data-roster-empty]');
+        var filter = picker.querySelector('[data-roster-filter]');
+        var goalie = picker.querySelector('[data-roster-goalie]');
+
+        var updateCount = function () {
+            if (!counter) return;
+            counter.textContent = boxes.filter(function (box) { return box.checked; }).length;
+        };
+
+        var applyFilter = function () {
+            var term = filter ? filter.value.trim().toLowerCase() : '';
+            var visible = 0;
+
+            items.forEach(function (item) {
+                var match = term === '' || (item.getAttribute('data-roster-name') || '').indexOf(term) !== -1;
+                item.classList.toggle('d-none', !match);
+                if (match) visible += 1;
+            });
+
+            if (emptyHint) emptyHint.classList.toggle('d-none', visible > 0);
+        };
+
+        boxes.forEach(function (box) {
+            box.addEventListener('change', function () {
+                // Der Torhüter muss im Kader stehen: wird sein Haken entfernt,
+                // ist die Torhüter-Angabe hinfällig.
+                if (!box.checked && goalie && goalie.value === box.value) goalie.value = '';
+                updateCount();
+            });
+        });
+
+        if (filter) filter.addEventListener('input', applyFilter);
+
+        // Der Torhüter gehört zum Aufgebot – der Haken wird mitgesetzt.
+        if (goalie) {
+            goalie.addEventListener('change', function () {
+                boxes.forEach(function (box) {
+                    if (box.value === goalie.value) box.checked = true;
+                });
+                updateCount();
+            });
+        }
+
+        var selectAll = picker.querySelector('[data-roster-all]');
+        var selectNone = picker.querySelector('[data-roster-none]');
+
+        // Alle/Keine wirken nur auf sichtbare Zeilen, damit ein gesetzter
+        // Filter nicht heimlich den ganzen Kader umstellt.
+        if (selectAll) {
+            selectAll.addEventListener('click', function () {
+                items.forEach(function (item) {
+                    if (item.classList.contains('d-none')) return;
+                    var box = item.querySelector('[data-roster-check]');
+                    if (box) box.checked = true;
+                });
+                updateCount();
+            });
+        }
+
+        if (selectNone) {
+            selectNone.addEventListener('click', function () {
+                items.forEach(function (item) {
+                    if (item.classList.contains('d-none')) return;
+                    var box = item.querySelector('[data-roster-check]');
+                    if (!box) return;
+                    box.checked = false;
+                    if (goalie && goalie.value === box.value) goalie.value = '';
+                });
+                updateCount();
+            });
+        }
+
+        applyFilter();
+        updateCount();
+    }
+
+    // --- Aufgebot kopieren (Dashboard) ---
+    // Der Text steht fertig im data-Attribut, damit er genau so in den
+    // Chat wandert, wie er auf der Kachel steht.
+    var copyButtons = document.querySelectorAll('[data-copy-text]');
+    Array.prototype.forEach.call(copyButtons, function (button) {
+        button.addEventListener('click', function () {
+            var text = button.getAttribute('data-copy-text') || '';
+            var original = button.textContent;
+
+            var done = function (message) {
+                button.textContent = message;
+                setTimeout(function () { button.textContent = original; }, 2000);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(function () { done('Kopiert'); })
+                    .catch(function () { done('Kopieren nicht möglich'); });
+                return;
+            }
+
+            // Rückfall für Browser ohne Clipboard-API (und http ohne TLS)
+            var helper = document.createElement('textarea');
+            helper.value = text;
+            helper.setAttribute('readonly', 'readonly');
+            helper.style.position = 'fixed';
+            helper.style.left = '-1000px';
+            document.body.appendChild(helper);
+            helper.select();
+
+            try {
+                done(document.execCommand('copy') ? 'Kopiert' : 'Kopieren nicht möglich');
+            } catch (error) {
+                done('Kopieren nicht möglich');
+            }
+
+            document.body.removeChild(helper);
+        });
+    });
+
     // --- Spieluhr ---
     // Der Server liefert den Stand beim Rendern; hier wird nur weitergezählt.
     // Die Wahrheit bleibt auf dem Server, ein Neuladen synchronisiert wieder.

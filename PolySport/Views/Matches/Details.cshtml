@@ -29,7 +29,7 @@
         </h5>
 
         <h1 class="display-4 fw-bold">
-            <span class="text-primary">PolySport</span> @Model.OurScore : @Model.OpponentScore <span class="text-danger">@Model.OpponentName</span>
+            <span class="text-primary">Polysport</span> @Model.OurScore : @Model.OpponentScore <span class="text-danger">@Model.OpponentName</span>
         </h1>
 
         @* Spieluhr: der Startwert kommt vom Server, das Weiterzählen macht site.js *@
@@ -206,14 +206,26 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Kader (@Model.RosterNames.Count Spieler)</h5>
+                    <h5 class="mb-0">Kader (@Model.Roster.Count Spieler)</h5>
+                    @if (Model.GoalkeeperName != null)
+                    {
+                        <div class="small text-muted">Im Tor: @Model.GoalkeeperName</div>
+                    }
                 </div>
-                @if (Model.RosterNames.Any())
+                @if (Model.Roster.Any())
                 {
+                    @* Torhüter zuerst: vor dem Spiel ist das die Angabe,
+                       nach der zuerst gefragt wird. *@
                     <ul class="list-group list-group-flush">
-                        @foreach (var player in Model.RosterNames.OrderBy(n => n))
+                        @foreach (var member in Model.Roster.OrderByDescending(r => r.IsGoalkeeper).ThenBy(r => r.Name))
                         {
-                            <li class="list-group-item">@player</li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@member.Name</span>
+                                @if (member.IsGoalkeeper)
+                                {
+                                    <span class="badge bg-info-subtle text-body-secondary border">Tor</span>
+                                }
+                            </li>
                         }
                     </ul>
                 }
@@ -232,6 +244,16 @@
             <a asp-action="Edit" asp-route-id="@Model.MatchId" class="btn btn-outline-primary">
                 @(Model.HasStarted ? "Saison, Gegner oder Datum ändern" : "Saison, Gegner, Datum oder Kader ändern")
             </a>
+
+            @* Nur ein nie gestartetes Match ist reine Terminplanung und
+               darf weg. Sobald die Uhr lief, hängen Einsätze daran. *@
+            @if (!Model.HasStarted && !Model.Timeline.Any())
+            {
+                <form asp-action="Delete" asp-route-id="@Model.MatchId" method="post"
+                      onsubmit="return confirm('Dieses Match wirklich löschen? Der erfasste Kader geht mit.');">
+                    <button type="submit" class="btn btn-outline-danger">Match löschen</button>
+                </form>
+            }
         }
     </div>
 </div>

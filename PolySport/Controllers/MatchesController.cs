@@ -21,21 +21,18 @@ namespace PolySport.Controllers
 
         // GET: Matches/Create (Lädt das leere Formular)
         [Authorize(Roles = AppRoles.Admin)]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var viewModel = new CreateMatchViewModel
             {
                 // Lade NUR aktive Saisons für das Dropdown
-                AvailableSeasons = _context.Seasons
+                AvailableSeasons = await _context.Seasons
                     .Where(s => s.IsActive)
                     .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                    .ToList(),
+                    .ToListAsync(),
 
-                // Lade NUR aktive Spieler (Soft-Delete) für die Kader-Auswahl
-                AvailablePlayers = _context.Players
-                    .Where(u => u.IsActive)
-                    .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.Username })
-                    .ToList()
+                // Nur aktive Spieler (Soft-Delete) stehen zur Auswahl
+                RosterOptions = await LoadRosterOptionsAsync(null)
             };
 
             return View(viewModel);
@@ -47,6 +44,8 @@ namespace PolySport.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateMatchViewModel viewModel)
         {
+            await ValidateNewRosterAsync(viewModel.SelectedPlayerIds, viewModel.GoalkeeperId);
+
             if (ModelState.IsValid)
             {
                 // 1. Das eigentliche Match-Objekt erstellen
@@ -63,18 +62,12 @@ namespace PolySport.Controllers
                 // Wir speichern das Match zuerst, damit der SQL Server eine Match.Id generiert!
                 await _context.SaveChangesAsync();
 
-                // 2. Jetzt die ausgewählten Spieler als Kader (MatchPlayer) verknüpfen
-                if (viewModel.SelectedPlayerIds != null && viewModel.SelectedPlayerIds.Any())
+                // 2. Der Kader darf leer bleiben: am Saisonanfang werden zuerst
+                // alle Termine erfasst, der Kader kommt vor dem Spiel dazu.
+                var roster = BuildRoster(match.Id, viewModel.SelectedPlayerIds, viewModel.GoalkeeperId);
+                if (roster.Count > 0)
                 {
-                    foreach (var playerId in viewModel.SelectedPlayerIds)
-                    {
-                        var matchPlayer = new MatchPlayer
-                        {
-                            MatchId = match.Id,
-                            UserId = playerId
-                        };
-                        _context.MatchPlayers.Add(matchPlayer);
-                    }
+                    _context.MatchPlayers.AddRange(roster);
                     await _context.SaveChangesAsync(); // Kader speichern
                 }
 
@@ -83,9 +76,12 @@ namespace PolySport.Controllers
             }
 
             // Falls jemand das Formular falsch ausfüllt (z.B. Gegner vergessen):
-            // Dropdowns neu laden, bevor die Seite mit Fehlermeldung neu angezeigt wird
-            viewModel.AvailableSeasons = _context.Seasons.Where(s => s.IsActive).Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name });
-            viewModel.AvailablePlayers = _context.Players.Where(u => u.IsActive).Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.Username });
+            // Auswahllisten neu laden, bevor die Seite mit Fehlermeldung erscheint
+            viewModel.AvailableSeasons = await _context.Seasons
+                .Where(s => s.IsActive)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+            viewModel.RosterOptions = await LoadRosterOptionsAsync(viewModel.SelectedPlayerIds);
 
             return View(viewModel);
         }
@@ -174,6 +170,7 @@ namespace PolySport.Controllers
             if (match == null) return NotFound();
 
             var rosterIds = match.MatchPlayers.Select(mp => mp.UserId).ToList();
+            var goalkeeper = match.MatchPlayers.FirstOrDefault(mp => mp.IsGoalkeeper);
 
             return View(new EditMatchViewModel
             {
@@ -184,13 +181,16 @@ namespace PolySport.Controllers
                 IsHomeGame = match.IsHomeGame,
                 GoalCount = match.Goals.Count,
                 SelectedPlayerIds = rosterIds,
+                GoalkeeperId = goalkeeper?.UserId,
                 CanEditRoster = !match.HasStarted,
+                CanDelete = !match.HasStarted && match.Goals.Count == 0,
                 RosterNames = match.MatchPlayers
                     .Select(mp => mp.User!.Username)
                     .OrderBy(n => n)
                     .ToList(),
+                GoalkeeperName = goalkeeper?.User?.Username,
                 AvailableSeasons = await LoadSeasonsAsync(),
-                AvailablePlayers = await LoadPlayersAsync(rosterIds)
+                RosterOptions = await LoadRosterOptionsAsync(rosterIds)
             });
         }
 
@@ -214,7 +214,7 @@ namespace PolySport.Controllers
             var canEditRoster = !match.HasStarted;
 
             if (canEditRoster)
-                await ValidateRosterAsync(match, viewModel.SelectedPlayerIds);
+                await ValidateRosterAsync(match, viewModel.SelectedPlayerIds, viewModel.GoalkeeperId);
 
             if (ModelState.IsValid)
             {
@@ -224,7 +224,7 @@ namespace PolySport.Controllers
                 match.IsHomeGame = viewModel.IsHomeGame;
 
                 if (canEditRoster)
-                    ApplyRoster(match, viewModel.SelectedPlayerIds);
+                    ApplyRoster(match, viewModel.SelectedPlayerIds, viewModel.GoalkeeperId);
 
                 await _context.SaveChangesAsync();
 
@@ -234,18 +234,70 @@ namespace PolySport.Controllers
 
             viewModel.GoalCount = await _context.Goals.CountAsync(g => g.MatchId == id);
             viewModel.CanEditRoster = canEditRoster;
+            viewModel.CanDelete = canEditRoster && viewModel.GoalCount == 0;
             viewModel.RosterNames = await _context.MatchPlayers
                 .Where(mp => mp.MatchId == id)
                 .Select(mp => mp.User!.Username)
                 .OrderBy(n => n)
                 .ToListAsync();
+            viewModel.GoalkeeperName = await _context.MatchPlayers
+                .Where(mp => mp.MatchId == id && mp.IsGoalkeeper)
+                .Select(mp => mp.User!.Username)
+                .FirstOrDefaultAsync();
             viewModel.AvailableSeasons = await LoadSeasonsAsync();
             // Auch den bisherigen Kader mitgeben: sonst fehlt ein abgewählter
             // inaktiver Spieler in der Liste und liesse sich nicht zurückholen.
-            viewModel.AvailablePlayers = await LoadPlayersAsync(
+            viewModel.RosterOptions = await LoadRosterOptionsAsync(
                 (viewModel.SelectedPlayerIds ?? new List<int>())
                     .Concat(match.MatchPlayers.Select(mp => mp.UserId)));
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Prüft die Auswahl beim Anlegen eines Matches. Ein leerer Kader ist
+        /// ausdrücklich erlaubt – am Saisonanfang werden zuerst alle Termine
+        /// erfasst. Geprüft wird nur, dass die gesendeten Ids zu aktiven
+        /// Spielern gehören; ein manipuliertes Formular könnte jede Id senden.
+        /// </summary>
+        private async Task ValidateNewRosterAsync(List<int>? selectedPlayerIds, int? goalkeeperId)
+        {
+            var selected = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
+            if (selected.Count == 0 && !goalkeeperId.HasValue) return;
+
+            var allowed = await _context.Players
+                .Where(p => p.IsActive)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            if (selected.Any(pid => !allowed.Contains(pid)))
+                ModelState.AddModelError(nameof(CreateMatchViewModel.SelectedPlayerIds),
+                    "Mindestens einer der gewählten Spieler existiert nicht oder ist nicht aktiv.");
+
+            if (goalkeeperId.HasValue && !allowed.Contains(goalkeeperId.Value))
+                ModelState.AddModelError(nameof(CreateMatchViewModel.GoalkeeperId),
+                    "Der gewählte Torhüter existiert nicht oder ist nicht aktiv.");
+        }
+
+        /// <summary>
+        /// Kadereinträge aus der Auswahl. Der Torhüter kommt immer mit in den
+        /// Kader, auch wenn nur das Torhüter-Feld gesetzt und der Haken
+        /// vergessen wurde.
+        /// </summary>
+        private static List<MatchPlayer> BuildRoster(int matchId, List<int>? selectedPlayerIds, int? goalkeeperId)
+        {
+            var ids = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
+
+            if (goalkeeperId.HasValue && !ids.Contains(goalkeeperId.Value))
+                ids.Add(goalkeeperId.Value);
+
+            return ids
+                .Select(id => new MatchPlayer
+                {
+                    MatchId = matchId,
+                    UserId = id,
+                    IsGoalkeeper = id == goalkeeperId
+                })
+                .ToList();
         }
 
         /// <summary>
@@ -255,9 +307,13 @@ namespace PolySport.Controllers
         /// herausfallen – sonst stünde in der Torfolge jemand, der laut Kader
         /// nicht dabei war.
         /// </summary>
-        private async Task ValidateRosterAsync(Match match, List<int>? selectedPlayerIds)
+        private async Task ValidateRosterAsync(Match match, List<int>? selectedPlayerIds, int? goalkeeperId)
         {
+            // Der Torhüter gehört immer zum Kader, auch ohne gesetzten Haken.
             var selected = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
+            if (goalkeeperId.HasValue && !selected.Contains(goalkeeperId.Value))
+                selected.Add(goalkeeperId.Value);
+
             var current = match.MatchPlayers.Select(mp => mp.UserId).ToList();
 
             var allowed = await _context.Players
@@ -300,17 +356,33 @@ namespace PolySport.Controllers
                 + ". Lösche das Tor zuerst auf der Detailseite.");
         }
 
-        /// <summary>Kader auf die Auswahl bringen: Weggefallene raus, neue rein.</summary>
-        private void ApplyRoster(Match match, List<int>? selectedPlayerIds)
+        /// <summary>
+        /// Kader auf die Auswahl bringen: Weggefallene raus, neue rein, und die
+        /// Torhüter-Markierung neu setzen – es ist immer höchstens einer.
+        /// </summary>
+        private void ApplyRoster(Match match, List<int>? selectedPlayerIds, int? goalkeeperId)
         {
             var selected = (selectedPlayerIds ?? new List<int>()).Distinct().ToList();
-            var current = match.MatchPlayers.Select(mp => mp.UserId).ToList();
+            if (goalkeeperId.HasValue && !selected.Contains(goalkeeperId.Value))
+                selected.Add(goalkeeperId.Value);
 
-            foreach (var gone in match.MatchPlayers.Where(mp => !selected.Contains(mp.UserId)).ToList())
+            // Abbild vor dem Ändern: EF räumt die Navigationsliste beim
+            // Entfernen auf, eine Schleife darüber würde Einträge überspringen.
+            var current = match.MatchPlayers.ToList();
+
+            foreach (var gone in current.Where(mp => !selected.Contains(mp.UserId)))
                 _context.MatchPlayers.Remove(gone);
 
-            foreach (var added in selected.Where(pid => !current.Contains(pid)))
-                _context.MatchPlayers.Add(new MatchPlayer { MatchId = match.Id, UserId = added });
+            foreach (var stays in current.Where(mp => selected.Contains(mp.UserId)))
+                stays.IsGoalkeeper = stays.UserId == goalkeeperId;
+
+            foreach (var added in selected.Where(pid => current.All(mp => mp.UserId != pid)))
+                _context.MatchPlayers.Add(new MatchPlayer
+                {
+                    MatchId = match.Id,
+                    UserId = added,
+                    IsGoalkeeper = added == goalkeeperId
+                });
         }
 
         /// <summary>
@@ -318,17 +390,18 @@ namespace PolySport.Controllers
         /// schon im Kader stehen. Ein inzwischen deaktivierter Spieler soll
         /// nicht verschwinden, nur weil das Formular ihn nicht mehr anbietet.
         /// </summary>
-        private async Task<List<SelectListItem>> LoadPlayersAsync(IEnumerable<int>? includeIds)
+        private async Task<List<RosterPlayerOption>> LoadRosterOptionsAsync(IEnumerable<int>? includeIds)
         {
             var ids = includeIds?.ToList() ?? new List<int>();
 
             return await _context.Players
                 .Where(p => p.IsActive || ids.Contains(p.Id))
                 .OrderBy(p => p.Username)
-                .Select(p => new SelectListItem
+                .Select(p => new RosterPlayerOption
                 {
-                    Value = p.Id.ToString(),
-                    Text = p.IsActive ? p.Username : p.Username + " (inaktiv)"
+                    Id = p.Id,
+                    Name = p.Username,
+                    IsActive = p.IsActive
                 })
                 .ToListAsync();
         }
@@ -345,6 +418,47 @@ namespace PolySport.Controllers
                     Text = s.IsActive ? s.Name + " (aktiv)" : s.Name
                 })
                 .ToListAsync();
+        }
+
+        // POST: Matches/Delete/5 – Fehleintrag aus der Terminplanung entfernen
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var match = await _context.Matches
+                .Include(m => m.Goals)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (match == null) return NotFound();
+
+            // Sobald die Uhr lief, bleibt das Match bestehen: daran hängen
+            // Einsätze, Tore und die Bilanz der Saison. Ein vertippter oder
+            // doppelt erfasster Termin darf dagegen weg.
+            if (match.HasStarted)
+            {
+                TempData["Error"] = "Das Match ist gestartet und lässt sich nicht mehr löschen.";
+                return RedirectToAction(nameof(Details), new { id = match.Id });
+            }
+
+            // Ein nicht gestartetes Match sollte keine Tore haben. Falls doch,
+            // wird nicht stillschweigend mitgelöscht – Tore sind erfasste Daten.
+            if (match.Goals.Any())
+            {
+                TempData["Error"] = $"An diesem Match hängen {match.Goals.Count} Tore. "
+                    + "Lösche sie zuerst auf der Detailseite.";
+                return RedirectToAction(nameof(Details), new { id = match.Id });
+            }
+
+            var seasonId = match.SeasonId;
+            var label = $"{match.MatchDate:dd.MM.yyyy} gegen {match.OpponentName}";
+
+            // Der Kader hängt am Match und wird von der Datenbank mitgelöscht.
+            _context.Matches.Remove(match);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Match {label} wurde gelöscht.";
+            return RedirectToAction(nameof(Schedule), new { id = seasonId });
         }
 
         // GET: Matches/Details/5
@@ -387,8 +501,15 @@ namespace PolySport.Controllers
                 ElapsedSecondsInPeriod = match.ElapsedSecondsInPeriod,
                 StatusLabel = match.StatusLabel,
 
-                // Liste der Spielernamen im Kader
-                RosterNames = match.MatchPlayers.Select(mp => mp.User!.Username).ToList(),
+                // Kader mit Torhüter-Markierung, alphabetisch
+                Roster = match.MatchPlayers
+                    .Select(mp => new RosterMember
+                    {
+                        Name = mp.User!.Username,
+                        IsGoalkeeper = mp.IsGoalkeeper
+                    })
+                    .OrderBy(r => r.Name)
+                    .ToList(),
 
                 Timeline = BuildTimeline(match.Goals)
             };

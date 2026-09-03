@@ -74,6 +74,38 @@ body {
   background-color: var(--bs-tertiary-bg);
 }
 
+/* Torhüter-Einsatz: hinterlegte Zelle mit kleiner Beschriftung */
+.season-sheet .sheet-goalie {
+  background-color: var(--bs-info-bg-subtle);
+}
+
+.sheet-goalie-mark {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  margin-right: 0.15rem;
+}
+
+/* ============================================================
+   Kaderauswahl beim Anlegen und Bearbeiten eines Matches
+   ------------------------------------------------------------
+   Bewusst kein Dropdown: die Haken bleiben sichtbar, während
+   man den Kader zusammenstellt. Bei vielen Spielern rollt die
+   Liste, damit das Formular nicht auseinanderläuft.
+   ============================================================ */
+.roster-picker__list {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   Präsenzliste auf dem Dashboard
+   ============================================================ */
+.presence-list {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
 /* ============================================================
    Select2 (Such-Dropdowns bei "Match anlegen" und "Tor erfassen")
    ------------------------------------------------------------
@@ -304,7 +336,8 @@ body {
   /* Grautöne der Total- und Leer-Spalten tatsächlich mitdrucken */
   .table,
   .season-sheet .sheet-total-col,
-  .season-sheet .sheet-absent {
+  .season-sheet .sheet-absent,
+  .season-sheet .sheet-goalie {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

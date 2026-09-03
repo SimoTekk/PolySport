@@ -6,6 +6,18 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.6.0 – 03.09.2026
+
+- **Präsenzliste auf dem Dashboard**: anstelle des Schnellzugriffs steht jetzt da, wer wie oft im Einsatz war. Gezählt werden nur beendete Spiele – ein Kader für einen noch offenen Termin ist eine Planung, kein Einsatz. Dieselbe Regel gilt jetzt auch für die Einsätze im Saisonblatt
+- **Aufgebot auf dem Dashboard**: vor dem nächsten Match stehen Torhüter und Feldspieler mit Anzahl und Namen da, auch ohne Anmeldung. „Text kopieren“ legt das Aufgebot als fertigen Text in die Zwischenablage – etwa für den Chat der Mannschaft
+- **Torhüter im Kader**: beim Anlegen und Bearbeiten eines Matches gibt es ein eigenes Feld für den Torhüter. Auch ein Feldspieler lässt sich dort wählen, damit bei Torhütermangel nachvollziehbar bleibt, wer im Tor stand. Sichtbar auf der Match-Detailseite und im Saisonblatt, dort mit „TH“ in der hinterlegten Zelle
+- **Kaderauswahl als Ankreuzliste**: das Dropdown klappte nach jeder Auswahl zu. Jetzt stehen alle Spieler als Haken da, mit Suchfeld und „Alle/Keine“ – gesetzte Haken bleiben beim Suchen erhalten
+- **Nicht gestartete Matches löschen**: ein vertippter oder doppelt erfasster Termin lässt sich auf der Match-Detailseite und unter „Match bearbeiten“ entfernen, der erfasste Kader geht mit. Sobald die Uhr gelaufen ist, bleibt das Match bestehen – daran hängen Einsätze und die Bilanz der Saison
+- **Match ohne Kader anlegen**: am Saisonanfang lassen sich so zuerst alle Termine erfassen, der Kader kommt vor dem Spiel über „Match bearbeiten“ dazu
+- Im Spielplan waren „–“ bei Heim/Auswärts und „Nicht gestartet“ im Dark Mode kaum lesbar. Die hellgraue Fläche richtet sich jetzt nach dem Modus; dasselbe gilt für „Nicht gestartet“ in der Match-Historie und „Mitglied“ in der Benutzerverwaltung
+- „Top-Scorer“ heisst jetzt überall „Scorer“
+- „PolySport“ wird in der Anwendung jetzt durchgehend „Polysport“ geschrieben
+
 ## v1.5.2 – 24.08.2026
 
 - **Spielplan**: neue Seite mit allen Terminen einer Saison – kommende Matches oben, gespielte darunter, nach Monat gruppiert. Ein Klick führt zum Match. Erreichbar über den Menüpunkt „Spielplan“

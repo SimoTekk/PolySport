@@ -4,10 +4,6 @@
     ViewData["Title"] = "Neues Match anlegen";
 }
 
-@section VendorStyles {
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-}
-
 <h2>Neues Match anlegen</h2>
 <hr />
 
@@ -47,10 +43,15 @@
             </div>
 
             <div class="form-group mb-4">
-                <label asp-for="SelectedPlayerIds" class="control-label">Spieler im Kader (Tippen zum Suchen)</label>
-                <select asp-for="SelectedPlayerIds" class="form-control select2-multiple" asp-items="Model.AvailablePlayers" multiple="multiple">
-                </select>
+                <label asp-for="SelectedPlayerIds" class="control-label"></label>
+                <partial name="_RosterPicker" model="Model.Picker" />
                 <span asp-validation-for="SelectedPlayerIds" class="text-danger"></span>
+                <span asp-validation-for="GoalkeeperId" class="text-danger"></span>
+                <div class="form-text">
+                    Der Kader darf leer bleiben: am Saisonanfang lassen sich so
+                    zuerst alle Termine anlegen. Vor dem Spiel wird er unter
+                    „Match bearbeiten“ nachgetragen.
+                </div>
             </div>
 
             <div class="form-group">
@@ -65,19 +66,4 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-
-    @* jQuery kommt bereits aus dem Layout – ein zweites Laden würde die
-       vorher registrierte Validierung an eine andere jQuery-Instanz hängen. *@
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script>
-        // Sobald die Seite geladen ist, machen wir das Spieler-Dropdown "schlau"
-        $(document).ready(function() {
-            $('.select2-multiple').select2({
-                placeholder: "Spieler suchen und auswählen...",
-                allowClear: true,
-                width: '100%' // Passt sich der Breite des Formulars an
-            });
-        });
-    </script>
 }

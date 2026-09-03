@@ -16,7 +16,7 @@
     var updateAvailable = updateInfo?.IsUpdateAvailable == true;
 
     // Aktive Seite in der Menüleiste hervorheben. Der Controller allein
-    // genügt nicht: Top-Scorer und Saisonblatt teilen sich Statistics,
+    // genügt nicht: Scorer und Saisonblatt teilen sich Statistics,
     // darum entscheidet dort zusätzlich die Aktion.
     var routeController = ViewContext.RouteData.Values["controller"]?.ToString();
     var routeAction = ViewContext.RouteData.Values["action"]?.ToString();
@@ -31,7 +31,7 @@
     // Menüpunkt – darum aus onMatches herausnehmen.
     var onSchedule = IsOn("Matches", "Schedule");
     var onMatches = (IsOn("Matches") && !onSchedule) || IsOn("Goals");
-    var onTopScorer = IsOn("Statistics", "Season");
+    var onScorer = IsOn("Statistics", "Season");
     var onSheet = IsOn("Statistics", "Sheet");
     var onSeasons = IsOn("Seasons");
     var onPlayers = IsOn("Players");
@@ -47,7 +47,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - PolySport</title>
+    <title>@ViewData["Title"] - Polysport</title>
     @* Das Wappen liegt als .ico mit 16, 32 und 48 Pixel vor; der Browser
        nimmt die passende Grösse. Bewusst kein SVG davor: favicon.svg zeigt
        noch den alten Entwurf und würde als rel="icon" vorgezogen. *@
@@ -65,7 +65,7 @@
     <header>
         <nav class="navbar navbar-expand-sm border-bottom box-shadow mb-3 bg-body-tertiary">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PolySport</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Polysport</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -85,7 +85,7 @@
                                 <a class="@NavClass(onSchedule)" aria-current="@Current(onSchedule)" asp-area="" asp-controller="Matches" asp-action="Schedule">Spielplan</a>
                             </li>
                             <li class="nav-item">
-                                <a class="@NavClass(onTopScorer)" aria-current="@Current(onTopScorer)" asp-area="" asp-controller="Statistics" asp-action="Season">Top-Scorer</a>
+                                <a class="@NavClass(onScorer)" aria-current="@Current(onScorer)" asp-area="" asp-controller="Statistics" asp-action="Season">Scorer</a>
                             </li>
                             <li class="nav-item">
                                 <a class="@NavClass(onSheet)" aria-current="@Current(onSheet)" asp-area="" asp-controller="Statistics" asp-action="Sheet">Saisonblatt</a>
@@ -152,7 +152,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <span>&copy; 2026 - PolySport</span>
+            <span>&copy; 2026 - Polysport</span>
             @{
                 var versionLabel = UpdateService.Cached.CurrentVersion;
                 var versionKnown = !string.Equals(versionLabel, "unbekannt", StringComparison.Ordinal);

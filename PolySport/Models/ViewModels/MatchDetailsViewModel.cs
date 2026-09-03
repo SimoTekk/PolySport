@@ -33,10 +33,21 @@ namespace PolySport.Models.ViewModels
                                    : OurScore < OpponentScore ? "Niederlage"
                                    : "Unentschieden";
 
-        public List<string> RosterNames { get; set; } = new List<string>();
+        /// <summary>Kader dieses Matches, alphabetisch, mit Torhüter-Markierung.</summary>
+        public List<RosterMember> Roster { get; set; } = new List<RosterMember>();
+
+        /// <summary>Wer im Tor stand – null, wenn nichts erfasst ist.</summary>
+        public string? GoalkeeperName => Roster.FirstOrDefault(r => r.IsGoalkeeper)?.Name;
 
         /// <summary>Alle Tore chronologisch, mit laufendem Zwischenstand.</summary>
         public List<GoalDisplay> Timeline { get; set; } = new List<GoalDisplay>();
+    }
+
+    /// <summary>Ein Kadereintrag für die Anzeige.</summary>
+    public class RosterMember
+    {
+        public string Name { get; set; } = string.Empty;
+        public bool IsGoalkeeper { get; set; }
     }
 
     // Eine kleine Hilfsklasse nur für die Anzeige der Tore

@@ -25,7 +25,7 @@
             <button type="submit" class="btn btn-sm btn-outline-primary">Anzeigen</button>
         </form>
         <button type="button" id="printSheet" class="btn btn-sm btn-outline-primary">Drucken</button>
-        <a asp-action="Season" asp-route-id="@Model.SeasonId" class="btn btn-sm btn-outline-primary">Top-Scorer</a>
+        <a asp-action="Season" asp-route-id="@Model.SeasonId" class="btn btn-sm btn-outline-primary">Scorer</a>
     </div>
 </div>
 
@@ -38,7 +38,9 @@ else
     <p class="text-muted">
         <strong>T</strong> = Tore, <strong>A</strong> = Assists. Eine leere Zelle bedeutet,
         dass der Spieler in diesem Match nicht im Kader stand – eine 0 bedeutet, er war dabei
-        und hat nicht gepunktet.
+        und hat nicht gepunktet. Hinterlegte Zellen mit <strong>TH</strong> zeigen, wer in
+        diesem Match im Tor stand. Als Einsatz zählen nur beendete Matches – ein Kader
+        für einen noch offenen Termin ist eine Planung.
     </p>
 
     <div class="table-responsive season-sheet">
@@ -84,7 +86,9 @@ else
                             {
                                 <span class="badge bg-secondary ms-1">inaktiv</span>
                             }
-                            <div class="small text-muted">@player.MatchesPlayed Einsätze</div>
+                            <div class="small text-muted">
+                                @player.MatchesPlayed Einsätze@(player.GoalkeeperMatches > 0 ? $", {player.GoalkeeperMatches}× im Tor" : "")
+                            </div>
                         </th>
 
                         @foreach (var cell in player.Cells)
@@ -95,8 +99,18 @@ else
                             }
                             else
                             {
-                                <td class="text-center @(cell.Goals > 0 ? "fw-bold" : "text-muted")">@cell.Goals</td>
-                                <td class="text-center @(cell.Assists > 0 ? "fw-bold" : "text-muted")">@cell.Assists</td>
+                                @* Torhüter-Einsatz: hinterlegt und mit TH beschriftet, damit
+                                   später nachvollziehbar bleibt, wer wann im Tor stand. *@
+                                var goalieCell = cell.WasGoalkeeper ? " sheet-goalie" : "";
+                                var goalieTitle = cell.WasGoalkeeper ? "Im Tor" : null;
+                                <td class="text-center@(goalieCell) @(cell.Goals > 0 ? "fw-bold" : "text-muted")" title="@goalieTitle">
+                                    @if (cell.WasGoalkeeper)
+                                    {
+                                        <span class="sheet-goalie-mark">TH</span>
+                                    }
+                                    @cell.Goals
+                                </td>
+                                <td class="text-center@(goalieCell) @(cell.Assists > 0 ? "fw-bold" : "text-muted")" title="@goalieTitle">@cell.Assists</td>
                             }
                         }
 
