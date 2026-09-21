@@ -6,6 +6,12 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.6.2 – 21.09.2026
+
+- **Update prüft den Speicherplatz**: bevor neu gebaut wird, sieht das Update nach, wie viel frei ist. Ist es eng, räumt es zuerst den Docker-Build-Cache weg – der wuchs bisher mit jedem Update unbegrenzt mit und wurde nie aufgeräumt. Reicht es danach immer noch nicht, bricht das Update sauber ab, statt mitten im Neubau an der vollen Festplatte zu scheitern
+- Scheitert der Neubau trotzdem, steht auf der Update-Seite jetzt der Grund statt einer beliebigen Zeile aus dem Protokoll
+- Nach jedem Update wird Build-Cache verworfen, der älter als eine Woche ist
+
 ## v1.6.1 – 21.09.2026
 
 - **Bildschirm wachhalten**: auf der Match-Detailseite gibt es unter der Spieluhr den Schalter „Bildschirm wachhalten“. Solange er an ist, sperrt das Handy während des Spiels nicht mehr von selbst. Die Einstellung wird gemerkt, nach einem Wechsel in eine andere App greift sie beim Zurückkommen wieder. Der Browser erlaubt das nur über eine HTTPS-Verbindung – sonst steht der Schalter grau mit einem Hinweis

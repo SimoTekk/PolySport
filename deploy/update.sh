@@ -56,6 +56,32 @@ else
     fi
 fi
 
+step "Platz prüfen"
+
+# Der Build läuft im dotnet-SDK-Image und braucht mehrere Gigabyte. Läuft
+# die Platte dabei voll, bricht MSBuild mit einem Stapelabzug ab, aus dem
+# der Grund kaum hervorgeht – darum vorher nachsehen. Der Build-Cache von
+# Docker wächst mit jedem Update und wird von "docker image prune" nicht
+# angefasst; er ist der erste Kandidat, wenn es eng wird.
+free_mb() { df -Pm "$INSTALL_DIR" | awk 'NR==2 {print $4}'; }
+
+FREE_MB="$(free_mb)"
+printf '  frei: %s MB\n' "$FREE_MB"
+
+if (( FREE_MB < 5000 )); then
+    warn "Wenig Platz – Build-Cache und ungenutzte Images werden entfernt."
+    docker builder prune -af >/dev/null 2>&1 || true
+    docker image prune -af >/dev/null 2>&1 || true
+    FREE_MB="$(free_mb)"
+    printf '  frei nach dem Aufräumen: %s MB\n' "$FREE_MB"
+fi
+
+if (( FREE_MB < 2000 )); then
+    printf 'POLYSPORT_RESULT=Zu wenig Speicherplatz: nur %s MB frei, der Neubau braucht rund 3 GB. Die vorherige Version läuft weiter.\n' "$FREE_MB"
+    die "Zu wenig Platz (${FREE_MB} MB frei)."
+fi
+ok "Genug Platz"
+
 step "Datenbank sichern"
 
 if bash "$INSTALL_DIR/deploy/backup.sh"; then
@@ -88,11 +114,24 @@ ok "Version $NEW_VERSION eingetragen"
 
 step "Neu bauen und starten"
 
-docker compose up -d --build
+# Ohne diese Klammer bricht das Skript wegen "set -e" wortlos ab und die
+# Oberfläche zeigt irgendeine Zeile aus dem Protokoll als Grund.
+if ! docker compose up -d --build; then
+    FREE_MB="$(free_mb)"
+    if (( FREE_MB < 2000 )); then
+        printf 'POLYSPORT_RESULT=Der Neubau ist an zu wenig Speicherplatz gescheitert (%s MB frei). Die vorherige Version läuft weiter.\n' "$FREE_MB"
+    else
+        printf 'POLYSPORT_RESULT=Der Neubau ist fehlgeschlagen. Protokoll: %s/state/update-last.log\n' "$INSTALL_DIR"
+    fi
+    die "Neubau fehlgeschlagen."
+fi
 
 step "Aufräumen"
 docker image prune -f >/dev/null 2>&1 || true
-ok "Alte Images entfernt"
+# Der Build-Cache beschleunigt den nächsten Lauf, darf aber nicht endlos
+# wachsen: was älter als eine Woche ist, wird verworfen.
+docker builder prune -f --filter until=168h >/dev/null 2>&1 || true
+ok "Alte Images und alter Build-Cache entfernt"
 
 step "Status"
 docker compose ps
