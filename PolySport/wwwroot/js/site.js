@@ -196,4 +196,79 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     }
 
+    // --- Bildschirm wachhalten ---
+    // Während eines Spiels liegt das Handy oft nur daneben: ohne Wake Lock
+    // sperrt es mitten im Drittel. Der Browser gibt die Sperre frei, sobald
+    // die Seite in den Hintergrund geht – darum beim Zurückkommen erneut
+    // anfordern. Die API gibt es nur über HTTPS (oder localhost).
+    var awakeToggle = document.querySelector('[data-keep-awake]');
+    if (awakeToggle) {
+        var awakeHint = document.querySelector('[data-keep-awake-hint]');
+        var awakeKey = 'polysport.keepAwake';
+        var sentinel = null;
+
+        var setHint = function (text) {
+            if (awakeHint) awakeHint.textContent = text || '';
+        };
+
+        if (!('wakeLock' in navigator)) {
+            awakeToggle.checked = false;
+            awakeToggle.disabled = true;
+            setHint(window.isSecureContext
+                ? 'Dieser Browser kann den Bildschirm nicht wachhalten.'
+                : 'Bildschirm wachhalten braucht eine HTTPS-Verbindung.');
+        } else {
+            var releaseLock = function () {
+                if (!sentinel) return;
+                var current = sentinel;
+                sentinel = null;
+                current.release().catch(function () { });
+            };
+
+            var requestLock = function () {
+                if (sentinel || !awakeToggle.checked) return;
+                if (document.visibilityState !== 'visible') return;
+
+                navigator.wakeLock.request('screen')
+                    .then(function (lock) {
+                        sentinel = lock;
+                        setHint('');
+                        // Der Browser darf die Sperre jederzeit aufheben
+                        // (Akku, Seitenwechsel) – Zustand nachziehen.
+                        lock.addEventListener('release', function () {
+                            if (sentinel === lock) sentinel = null;
+                        });
+                    })
+                    .catch(function () {
+                        setHint('Bildschirm wachhalten klappt erst nach einer Berührung der Seite.');
+                    });
+            };
+
+            awakeToggle.addEventListener('change', function () {
+                try { localStorage.setItem(awakeKey, awakeToggle.checked ? '1' : '0'); } catch (error) { }
+
+                if (awakeToggle.checked) {
+                    requestLock();
+                } else {
+                    releaseLock();
+                    setHint('');
+                }
+            });
+
+            // Nach einem Wechsel in eine andere App ist die Sperre weg.
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') requestLock();
+            });
+
+            // Manche Browser vergeben die Sperre erst nach einer Berührung.
+            document.addEventListener('click', requestLock);
+
+            var storedAwake = null;
+            try { storedAwake = localStorage.getItem(awakeKey); } catch (error) { }
+            if (storedAwake === '0') awakeToggle.checked = false;
+
+            requestLock();
+        }
+    }
+
 });

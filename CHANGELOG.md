@@ -6,6 +6,10 @@ alle Einträge zwischen der installierten und der neuesten Version.
 Format bitte beibehalten – eine Überschrift `## vX.Y.Z – TT.MM.JJJJ`,
 darunter Punkte mit `-`.
 
+## v1.6.1 – 21.09.2026
+
+- **Bildschirm wachhalten**: auf der Match-Detailseite gibt es unter der Spieluhr den Schalter „Bildschirm wachhalten“. Solange er an ist, sperrt das Handy während des Spiels nicht mehr von selbst. Die Einstellung wird gemerkt, nach einem Wechsel in eine andere App greift sie beim Zurückkommen wieder. Der Browser erlaubt das nur über eine HTTPS-Verbindung – sonst steht der Schalter grau mit einem Hinweis
+
 ## v1.6.0 – 03.09.2026
 
 - **Präsenzliste auf dem Dashboard**: anstelle des Schnellzugriffs steht jetzt da, wer wie oft im Einsatz war. Gezählt werden nur beendete Spiele – ein Kader für einen noch offenen Termin ist eine Planung, kein Einsatz. Dieselbe Regel gilt jetzt auch für die Einsätze im Saisonblatt
